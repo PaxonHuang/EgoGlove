@@ -1,0 +1,193 @@
+# EchoGlove V7 — 系统架构 (ARCHITECTURE)
+
+> **Version**: V7.0
+> **Date**: 2026-07-24
+> **Status**: Design target (V7)
+> **Implements**: `STRATEGY.md` D1–D9
+> **Supersedes**: V6.0 架构（Beta 仓库 docs/V6/01_architecture_diagrams.md）
+
+本文件描述 V7 双产品线（Lite/Pro）的目标系统架构。所有能力描述带四级真实性标注：✅ 已实现 / 🟡 工程可实现（6-12 月）/ 🔬 需研发验证 / 🌌 长期方向。
+
+---
+
+## 1. 设计原则
+
+1. **双表示层优先**（D3）：硬件流统一，输出分叉为 MANO Layer 与 Robot Action Layer，互不污染。
+2. **视觉主导 + 可穿戴增强**（D1）：Vision = World State，Glove = Hand State，融合 = Human Intent。第一代硬件不进 CV（D7），但 Pro 预留 EGO Camera 接口。
+3. **推理分工诚实化**：传感器预处理在 MCU，AI 推理在 edge gateway / 移动 / 云（<3ms TinyML 跑不了完整 Transformer+fusion）。
+4. **开放生态**（D4/D5）：兼容 PyTorch / TFLite / ROS2 / Unity / Unreal / MANO / MediaPipe。
+5. **双产品线共享核心**（D6）：`firmware/shared/` 跨 Lite/Pro 复用协议、校准、Hand Token 生成。
+
+---
+
+## 2. 双产品线硬件架构
+
+### 2.1 EchoGlove Lite（消费 / 教育 / XR / 手语入口）
+
+```
+┌─────────────────────────────────────────────┐
+│           EchoGlove Lite (单手)              │
+│  ESP32-S3 N16R8                              │
+│  ├── 5× Flex (2.2" resistive, internal ADC1) │ ✅ V6 已实现
+│  ├── LSM6DSV16X 6-axis IMU @0x6A            │ 🟡 驱动待实现
+│  ├── BLE / WiFi                              │ 🟡
+│  └── Tier1 预处理 (filter/normalize)         │ ✅ 结构在
+│  BOM 目标 <¥500/手                            │
+└─────────────────────────────────────────────┘
+         │ BLE/WiFi
+         ▼
+   Phone / PC Relay (Tier2/3 推理)
+```
+
+### 2.2 EchoGlove Pro（具身智能数据入口）
+
+```
+┌──────────────────────────────────────────────────────────┐
+│                EchoGlove Pro (单手)                       │
+│  ESP32-P4 (400MHz RV32, 32MB PSRAM)                      │
+│  ├── 5× 柔性 eSkin / Force 传感 (升级自 Flex) 🔬          │
+│  ├── 工业级 IMU (LSM6DSV16X 升级款) 🟡                    │
+│  ├── 力接口 (contact + force estimate) 🔬                 │
+│  ├── EGO Camera 接口 (预留, D7) 🌌                        │
+│  ├── Depth 接口 (预留) 🌌                                  │
+│  └── 双生态通信 (D9):                                     │
+│      ├── USB-C / WiFi / BT  (消费侧 → AI 眼镜)           │
+│      └── ROS2 / Ethernet / USB3 Vision (机器人侧) 🟡      │
+└──────────────────────────────────────────────────────────┘
+         │
+         ▼
+   Base Station / Edge Gateway / Cloud (Tier2/3)
+```
+
+---
+
+## 3. 双表示层数据流（核心，D3）
+
+```
+┌──────────┐   raw sensor     ┌──────────────┐   Hand Token    ┌─────────────────────────┐
+│  Sensor  │ ───────────────→ │ Preprocess   │ ──────────────→ │   Hand Token Generator  │
+│  Layer   │  flex/imu/force  │ (MCU, <3ms)  │  normalized     │  (joint+pose+vel+force) │
+└──────────┘                  └──────────────┘  feature vec    └────────────┬────────────┘
+                                                                                   │
+                                              ┌────────────────────────────────────┴──┐
+                                              │                                         │
+                                    ┌─────────▼──────────┐                  ┌──────────▼───────────┐
+                                    │   MANO Layer       │                  │  Robot Action Layer  │
+                                    │  (parametric hand) │                  │  (action vector)     │
+                                    │  → mesh + verts    │                  │  → joint + 6DoF腕    │
+                                    └─────────┬──────────┘                  │  + vel/acc + contact │
+                                              │                              │  + force             │
+                                ┌─────────────┼──────────────┐               └──────────┬───────────┘
+                                │             │              │                          │
+                          ┌─────▼──┐   ┌──────▼─────┐  ┌──────▼─────┐          ┌────────▼────────┐
+                          │ Unity  │   │ Unreal     │  │ XR / 数字人 │          │ ROS2 / 机械臂   │
+                          │ ms-MANO│   │            │  │ 手语翻译    │          │ 灵巧手 / VLA    │
+                          └────────┘   └────────────┘  └────────────┘          │ RL 训练数据     │
+                                                                                   └─────────────────┘
+```
+
+**Hand Token 规范**（🟡 待定义，目标字段）：
+
+| 字段 | 维度 | 说明 | 真实性 |
+|------|------|------|--------|
+| flex/joint angle | 5/hand | 指间关节 | ✅ (Lite adc) |
+| IMU euler/quat | 3-4/hand | 手掌姿态 | 🟡 (驱动待) |
+| 6DoF wrist pose | 6 | 腕世界位姿 | 🔬 (需外部位姿源) |
+| velocity / accel | 6 | 速度/加速度 | 🔬 |
+| contact state | 5/hand | 指尖接触 | 🔬 (Pro force) |
+| force estimate | 5/hand | 指尖力 | 🔬 (Pro force) |
+
+---
+
+## 4. 通信栈
+
+### 4.1 Lite（BLE/WiFi 为主）
+- Gloves → Phone/PC: BLE GATT 或 WiFi UDP 🟡
+- Phone/PC Relay → Frontend: WebSocket ✅ (V6 已有)
+
+### 4.2 Pro（双生态，D9）
+
+| 路径 | 协议 | 用途 | 真实性 |
+|------|------|------|--------|
+| Glove → Base Station | USB-C / Ethernet | 高带宽低延迟主链路 | 🟡 |
+| Glove → AI 眼镜 | WiFi / BT | 消费侧 EGO 融合 | 🌌 |
+| Base Station → Robot | ROS2 / Ethernet | 机器人侧遥操作 | 🟡 |
+| Base Station → Vision | USB3 Vision | 工业相机集成 | 🌌 |
+
+### 4.3 历史通信栈（V6，archive 参考）
+- S3 ESP-NOW 69B → C6 relay → UART 2Mbps → P4 → USB HS CDC → PC ✅ (部分)
+- **已知硬伤**：on-board C6 = ESP-Hosted，**不能** ESP-NOW 透传。生产期 C6 走 ESP-Hosted Wi-Fi/UDP；开发期走 S3→P4 直连 UART（仅设计，`WIRED_UART` 不在代码）。
+
+---
+
+## 5. 三级推理分工（诚实版）
+
+| Tier | 位置 | 职责 | 真实性 |
+|------|------|------|--------|
+| Tier1 | MCU (S3/P4) | 传感器预处理、滤波、归一化、轻量 CNN（<3ms） | ✅ 结构在 / 🟡 模型待 |
+| Tier2 | Edge Gateway / P4 / 手机 | 中等模型推理（Gated Bi-CrossAttn 等 ~30ms） | 🟡 |
+| Tier3 | PC / Cloud | ST-GCN + MS-TCN + CTC、VLA、大模型 | 🟡 |
+
+> **诚实修正**：原 V6 设计"<3ms TinyML 跑完整 Transformer+fusion" 不成立。拆为：预处理在 MCU，AI 推理在 edge gateway/移动/云。
+
+---
+
+## 6. 仓库结构映射
+
+```
+firmware/lite/      → Lite 固件 (ESP32-S3, PlatformIO)
+firmware/pro/       → Pro 固件 (ESP32-P4, ESP-IDF)
+firmware/shared/    → 共享: uart_frame, Hand Token 协议, 校准
+base_station/       → P4/网关侧固件与上位机桥接
+relay/              → Python FastAPI 中继 (WS/NLP/TTS/路由)
+models/mano/        → MANO Layer 推理与对齐
+models/robot/       → Robot Action Layer 推理与对齐
+models/slr/         → 手语识别 (战略降级, D8)
+models/shared/      → 跨模型骨干/工具
+web/                → React3F 前端
+sdk/                → PyTorch/TFLite/ROS2/Unity SDK
+data/               → Open Core (open/) + Commercial (commercial/, gitignore)
+```
+
+---
+
+## 7. 与 V6 的差异（迁移要点）
+
+| 维度 | V6 (Beta) | V7 (本仓库) |
+|------|-----------|-------------|
+| 产品线 | 单一 Beta (Flex+IMU) | Lite + Pro 双线 (D6) |
+| 输出 | 11-dim 特征 → 46 类手势分类 | Hand Token → 双表示层 (D3) |
+| 视觉 | 无 | Pro 预留 EGO Camera 接口 (D7) |
+| 通信 | ESP-NOW→C6→UART→P4 | 双生态 (D9) USB-C/WiFi/BT + ROS2/Ethernet |
+| 数据 | edge_impulse 零星 CSV | Open Core + Commercial 分层 (D5) |
+| 仓库 | EchoGlove-SLR-MOCAP-Beta | EgoGlove monorepo |
+
+---
+
+## 8. 真实性现状总表（投资人/协作者必读）
+
+| 能力 | 状态 | 说明 |
+|------|------|------|
+| Flex internal ADC1 采集 | ✅ | V6 已落地，GPIO1-5, N=16 oversample, NVS cal |
+| S3 ESP-NOW 通信 | ✅ | V6 已落地 |
+| P4 UART-RX + USB-CDC | ✅ | V6 已落地 |
+| P4 standalone mock | ✅ | V6 已验证 |
+| LSM6DSV16X IMU 驱动 | 🟡 | 驱动不存在，IMU 输出全零 |
+| S3→P4 有线 UART | 🟡 | `WIRED_UART` 设计但不在代码 |
+| ROS2 SDK | 🟡 | 待实现 |
+| MANO 双表示层 | 🟡 | Hand Token 规范待定义 |
+| MediaPipe+glove 融合 | 🟡 | 待实现 |
+| 连续手语 benchmark | 🔬 | 需建，延迟/WER/连续准确率 |
+| 柔性 eSkin / Force | 🔬 | Pro 升级方向 |
+| EGO Camera 融合 | 🌌 | 第一代不进，预留接口 |
+| Human Hand Foundation Model | 🌌 | 2028+ 长期 |
+
+---
+
+## 相关文档
+
+- `STRATEGY.md` — 战略冻结（D1–D9）
+- `01_architecture_diagrams.md` — 详细架构图（V7 版）
+- `02_BOM_table.md` — Lite/Pro BOM
+- `04_SOP-SPEC-PLAN_V7.md` — 主规格书
+- `../BP/EchoGlove_BP_V2.1.md` — 产业级 BP
