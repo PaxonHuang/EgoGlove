@@ -1,0 +1,67 @@
+# ---- Build artifacts ----
+build/
+dist/
+*.elf
+*.bin
+*.hex
+*.map
+.pio/
+.pioenvs/
+__pycache__/
+*.pyc
+node_modules/
+.next/
+dist/
+*.log
+
+# ---- IDE / Editor ----
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# ---- PlatformIO / Arduino ----
+.pio/
+.pioenvs/
+.env
+env.bak
+
+# ---- Python ----
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ---- Secrets / personal ----
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+
+# ---- Claude / agent artifacts (session-local) ----
+.claude/
+.remember/
+.playwright-mcp/
+.superpowers/
+.graphify-out/
+plan.md
+.plan.md
+
+# ---- Large binary / data (track explicitly in data/) ----
+*.zip
+*.7z
+data/raw/
+data/private/
+!data/.gitkeep
+
+# ---- OS ----
+Thumbs.db
+ehthumbs.db
