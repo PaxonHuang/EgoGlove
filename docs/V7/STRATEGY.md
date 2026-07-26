@@ -2,7 +2,7 @@
 
 > **Version**: V7.0
 > **Date**: 2026-07-24
-> **Status**: Frozen (D1–D9 全部冻结)
+> **Status**: Frozen (D1–D10 全部冻结)
 > **Supersedes**: V6.0 战略 (Beta 仓库 docs/V6/)
 > **来源**: 用户与 GPT5.6 对话校验 + 代码实测修正 (2026-07-22/23)
 
@@ -24,7 +24,7 @@
 
 ---
 
-## 1. 冻结决策 D1–D9
+## 1. 冻结决策 D1–D10
 
 | # | 决策 | 选择 | 冻结日期 |
 |---|------|------|---------|
@@ -37,6 +37,33 @@
 | D7 | 第一代视觉 | AI 视觉**不进入第一代硬件**，Pro **预留 EGO Camera 接口**，后期 AI 眼镜融合 | 2026-07-23 |
 | D8 | 手语模型 | 保留但战略降级 —— 手语是 Hand Token 的一种解释方式，非唯一输出 | 2026-07-23 |
 | D9 | Pro 视觉接口 | **C 双生态兼容**：USB-C/WiFi/BT（消费侧接 AI 眼镜）+ ROS2/Ethernet/USB3 Vision（机器人侧） | 2026-07-23 |
+| D10 | 数据格式路线 | **格式先行 + Open Hand Motion Infrastructure**：不对标 Hi5/mHand 硬件；Hand Token 升级为双向互操作层（通用 21-joint 骨架）；硬件方向不变（Lite=flex+单IMU→IK/ML 估计 21 关节；Pro 多 IMU 仅路线图，现在不启动） | 2026-07-26 |
+
+---
+
+### D10 详解 — Open Hand Motion Infrastructure（2026-07-26 冻结，用户拍板）
+
+EchoGlove/EgoGlove 定位从"手套设备"升级为 **开放手部运动基础设施 (Open Hand Motion Infrastructure)**：不正面对标 Hi5 / mHand / Manus 硬件，而是建立开放的双向互操作层，让任何手套（含第三方）都能进出统一手部运动表示。
+
+**1. 硬件策略（格式先行，IMU 阵列仅路线图）**
+- **Lite**：维持低成本 `flex(5) + 单腕 IMU`；用 sensor fusion + IK/ML **估计 21-joint 手骨架**（不新增指节 IMU）。
+- **Pro**：**仅路线图**——预留 hybrid sensing / 多 IMU 指节架构能力；**现在不启动 IMU 阵列硬件研发**。
+- 原则：**不改当前硬件方向，先做协议与生态。**
+
+**2. 协议策略（双向互操作层）**
+Hand Token 成为**双向手部运动互操作层**：既能 **ingest** 第三方手套流（Hi5 / mHand / Manus / Rokoko 式四元数骨架、通用 21-joint 骨架、外部手套适配器），也能 **export** 到生态格式（MANO / BVH / FBX / OpenXR / ROS·ROS2）。EgoGlove = 基础设施，非单一设备。
+
+**3. Hand Token v2 数据模型（P0 冻结目标）**
+- 数据模型字段：`wrist pose`、`joint rotations`、`joint angles`、`confidence`、`timestamp`、`source metadata`。
+- 详细 wire-format 字节布局 + 适配器映射矩阵 → 待 3 份研究（`research_5`）落地后出 spec，交用户 **P0 冻结签核**，见 `07_dual_rep_layer.md`（v2 更新）与 `docs/superpowers/specs/`。
+
+**4. 两层架构原则**
+- **Sensor Layer**：flex / IMU / 未来传感器（设备侧，可保持紧凑 sensor-level 帧）。
+- **Skeleton Layer**：通用 **21-joint** 表示（MediaPipe 拓扑：腕1 + 每指4×5=21）→ MANO → 生态。**Hand Token v2 = Skeleton Layer 的互操作货币**。
+
+**优先级**：`P0` 冻结 Hand Token v2 数据模型 · `P1` 骨架抽象层 · `P2` 外部手套适配器 · `P3` MANO/BVH/FBX/OpenXR/ROS 导出器。
+
+> **与 D3 关系**：D10 在 D3 双表示层（MANO + Robot Action）**上游**新增通用 Skeleton Layer。管线变为 `Sensor → Skeleton Layer(21-joint Hand Token v2) → {MANO Layer, Robot Action Layer} + 各格式导出器`，且可被外部手套在 Skeleton Layer 注入。**强化而非取代 D3**。21-joint 与 MANO(16)/OpenXR(26) 可互映射。
 
 ---
 
