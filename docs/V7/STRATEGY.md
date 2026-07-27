@@ -2,7 +2,7 @@
 
 > **Version**: V7.0
 > **Date**: 2026-07-24
-> **Status**: Frozen (D1–D11 全部冻结)
+> **Status**: Frozen (D1–D12 全部冻结)
 > **Supersedes**: V6.0 战略 (Beta 仓库 docs/V6/)
 > **来源**: 用户与 GPT5.6 对话校验 + 代码实测修正 (2026-07-22/23)
 
@@ -20,11 +20,11 @@
 
 **使命**：构建连接人类动作智能与 AI 系统的低成本多模态交互基础设施，让人类手部成为 AI 理解现实世界、学习操作、控制智能体的入口。
 
-**定位**：**Human Hand Intelligence Layer（人体手部智能层）** —— 介于机器人本体/基础模型 与 应用 之间的数据入口层。**不**被框死成"动捕设备"或"机器人控制设备"。
+**定位**：**Human Hand Intelligence Layer（人体手部智能层）** —— 介于机器人本体/基础模型 与 应用 之间的数据入口层。**不**被框死成"动捕设备"或"机器人控制设备"。亦是**开放手部运动基础设施（open Hand Motion Infrastructure）**——Hi5/Manus/mHand 等厂商手套是**外部数据源/适配器，不是竞品**（D12）。
 
 ---
 
-## 1. 冻结决策 D1–D10
+## 1. 冻结决策 D1–D12
 
 | # | 决策 | 选择 | 冻结日期 |
 |---|------|------|---------|
@@ -39,6 +39,7 @@
 | D9 | Pro 视觉接口 | **C 双生态兼容**：USB-C/WiFi/BT（消费侧接 AI 眼镜）+ ROS2/Ethernet/USB3 Vision（机器人侧） | 2026-07-23 |
 | D10 | 数据格式路线 | **格式先行 + Open Hand Motion Infrastructure**：不对标 Hi5/mHand 硬件；Hand Token 升级为双向互操作层（通用 21-joint 骨架）；硬件方向不变（Lite=flex+单IMU→IK/ML 估计 21 关节；Pro 多 IMU 仅路线图，现在不启动） | 2026-07-26 |
 | D11 | v2 canonical 表示 | **20 旋转关节为主表示 + 派生 21**：Hand Token v2 内部 canonical = 20-joint 旋转骨架（quaternion+rest-offset），前向运动学派生 21 MediaPipe 关键点位置作导出视图。**细化 D10**（21 仍是对外/视觉锚点与 web 前端）；换取对 Hi5/mHand/Manus/OpenXR 的无损 ingest | 2026-07-27 |
+| D12 | 生态对齐与定位 | **EgoGlove = 开放手部运动基础设施（open Hand Motion Infrastructure），非 Hi5/Manus/mHand 竞品**：厂商手套 = 外部数据源/适配器。方向锚定 **MANO/SMPL-X + FreeMoCap + OpenXR Hands + ROS2·DexRetargeting/AnyTeleop + egocentric-AI 数据集**。Hand Token v2 = 厂商无关通用中间表示。管线 `Sensor Source → Hand Token v2 → Canonical Skeleton Layer → MANO/OpenXR/FreeMoCap/ROS2/Robot`。确认 P0–P3 优先级；硬件不变、不启 IMU 阵列竞争。**细化 D10/D11** | 2026-07-27 |
 
 ---
 
@@ -77,6 +78,47 @@ Hand Token 成为**双向手部运动互操作层**：既能 **ingest** 第三�
 - **v1 保持不变**; **v2 = capability-flagged TLV 变长帧** (magic `HT`, version `0x02`, `caps` 位域声明四元数序/handedness, `total_len`, v1兼容 base 块 + TLV 区; 未知 TLV 按长度跳过)。Lite ~82B、Pro/ingested ~166–246B。version-gate 向后兼容。详见 `07_dual_rep_layer.md` v2 章与 `docs/superpowers/specs/2026-07-27-hand-token-v2-design.md`。
 
 > **为何是"细化"而非推翻 D10**: D10 的战略实质(格式先行、双向互操作、21 为生态锚点、硬件不变)全部保留; D11 只是把"通用 21-joint 骨架"的**内部实现**精确化为"20 旋转主 + 派生 21", 以获得 D10 追求的"无损 ingest 第三方手套"能力。管线更新为 `Sensor → Skeleton Layer(v2: 20-rotation canonical, 派生 21) → {MANO, Robot Action} + BVH/FBX/OpenXR/ROS 导出器`。
+
+---
+
+### D12 详解 — 生态对齐: 开放手部运动基础设施（2026-07-27 冻结，用户拍板；细化 D10/D11）
+
+用户在批准 D11 后，要求在写协议代码前做一次**生态对齐**：把定位锚定到一组开放标准/生态，并明确厂商手套的角色。
+
+**1. 定位: 非竞品, 是枢纽**
+EgoGlove **不是** Hi5/Manus/mHand 的竞品。这些商业手套被视为**外部数据源 + 适配器**（在 Skeleton Layer ingest）。EgoGlove 的方向 = 开放 **Hand Motion Infrastructure** 层，锚定:
+- **MANO/SMPL-X** — 人手 canonical 参数化表示（数字人/研究事实标准）。
+- **FreeMoCap** — 开放动捕数据管线 + 导出生态的参照。
+- **OpenXR Hand Tracking** — XR 运行时兼容。
+- **ROS2 + DexRetargeting/AnyTeleop** — 人手→机器人灵巧手的桥。
+- **egocentric-AI 数据集**（InterHand2.6M / COCO-WholeBody / Ego 类） — 未来具身智能数据集兼容。
+
+**2. Hand Token v2 = 厂商无关的通用中间表示**
+v2 **不围绕任何厂商手套设计**。canonical 骨架（D11 的 20 旋转关节）是数学中立的最小完整旋转集；任何源（flex/IMU/视觉/外部手套）ingest 进来，任何生态（MANO/OpenXR/FreeMoCap/ROS2/Robot）export 出去。
+
+**3. 管线（四段）**
+```
+Sensor Source (flex / IMU / vision / external gloves)
+        ↓  ingest / encode
+Hand Token v2             (通用中间表示 = 自描述 wire 帧)
+        ↓  decode
+Canonical Skeleton Layer (20 旋转关节, w-first, 父相对; FK 派生 21)
+        ↓  export / retarget
+MANO / OpenXR / FreeMoCap / ROS2 / Robot   (经 DexRetargeting/AnyTeleop)
+```
+> Hand Token v2（序列化载体）与 Canonical Skeleton Layer（解码后的 20 关节语义模型）是同一 D11 设计的两面：v2 帧承载骨架，消费者解码为 canonical 骨架后再 export/retarget。与 D3 双表示层一致（MANO Layer + Robot Action Layer 是两个 export 目标）。
+
+**4. 优先级（确认）**
+- **P0**: 冻结 canonical 骨架 + Hand Token v2（wire format + 跨语言金标）。← 当前，待代码签核
+- **P1**: 构建 **adapters（ingest）与 exporters**（MANO/OpenXR/FreeMoCap/ROS2·DexRetargeting）——协议侧软件，可用录制流/schema 离线做。
+- **P2**: **集成外部物理设备** Hi5/Manus/mHand（用 P1 适配器接真实设备流）。
+- **P3**: 未来 Pro 硬件扩展（多 IMU 等，仅路线图）。
+
+**5. 硬约束（不变）**
+- **不改当前硬件决策**（D6/D10）：Lite = flex+单腕 IMU；Pro 多 IMU 仅路线图。
+- **不启动 IMU 阵列竞争**——不做"每指节 9 轴 IMU"军备竞赛去对标 Hi5/mHand 硬件；专注**协议 / 互操作 / 生态**。
+
+> **为何"细化"而非新战略**: D12 不改 D1–D11 任何选择，只把 D10 的"开放基础设施"用一组具体开放生态锚点（MANO/FreeMoCap/OpenXR/ROS2·DexRetargeting/egocentric 数据集）钉死，并确认 P0–P3 落地次序 + 厂商手套=外部源/适配器（非竞品）的角色。
 
 ---
 
@@ -150,7 +192,7 @@ Sensor Stream ──→ Hand Token ──┤
 
 ## 8. 战略变更评审
 
-D1–D11 全部冻结，进入 BP 撰写与产品落地阶段。任何战略变更需：
+D1–D12 全部冻结，进入 BP 撰写与产品落地阶段。任何战略变更需：
 1. 在本文件追加 Dn 条目并标注日期
 2. 同步更新 `docs/BP/` 与 `docs/V7/ARCHITECTURE.md`
 3. commit 信息注明 "strategic change: Dn"

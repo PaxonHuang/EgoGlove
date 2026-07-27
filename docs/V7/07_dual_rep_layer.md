@@ -2,8 +2,8 @@
 
 > **Version**: V7.0
 > **Date**: 2026-07-25
-> **Status**: v1 协议层已实现待测 (host 单测 / pytest 金标) · v2 Skeleton Layer 设计冻结待实现 (D11) · 语义映射 🟡
-> **参见**: `STRATEGY.md` D3/D10/D11, `ARCHITECTURE.md` §2/§3, `../BP/research_5_data_formats_interop.md`
+> **Status**: v1 协议层已实现待测 (host 单测 / pytest 金标) · v2 Skeleton Layer 设计冻结待实现 (D11) · 生态对齐 (D12) · 语义映射 🟡
+> **参见**: `STRATEGY.md` D3/D10/D11/D12, `ARCHITECTURE.md` §2/§3, `../BP/research_5_data_formats_interop.md`
 
 双表示层是 EchoGlove 的核心壁垒 (D3): 同一硬件传感器流, 统一为 Hand Token, 再分叉为 MANO Layer (数字人侧) 与 Robot Action Layer (机器人侧), 互不污染。本文件定义 Hand Token 规范与两层映射。
 
@@ -71,6 +71,8 @@ Hand Token = 跨产品线 (Lite/Pro) 统一的归一化手部状态向量。
 
 D10/D11 把 Hand Token 升级为**双向手部运动互操作层**。v2 在 v1 (Sensor-level 紧凑帧) 之上引入 **Skeleton Layer**: 通用手部骨架表示, 可 ingest 第三方手套 (Hi5/mHand/Manus/Rokoko/OpenXR) 并 export 到生态 (MANO/BVH/FBX/OpenXR/ROS)。
 
+> **D12 生态对齐**: Hand Token v2 是**厂商无关的通用中间表示**, 不围绕任何厂商手套设计。四段管线 `Sensor Source(flex/IMU/vision/外部手套) → Hand Token v2(通用中间表示) → Canonical Skeleton Layer(20 关节, FK 派生 21) → MANO/OpenXR/FreeMoCap/ROS2/Robot(经 DexRetargeting/AnyTeleop)`。**厂商手套 = 外部源/适配器, 非竞品**。优先级: P0 冻结骨架+v2 · P1 adapters/exporters · P2 集成 Hi5/Manus/mHand · P3 Pro 硬件扩展。详见 `STRATEGY.md` D12。
+
 ### 1b.1 canonical 骨架 = 20 旋转关节 (D11)
 ```
  0  Wrist (根; 全局腕位姿单独承载)
@@ -103,7 +105,7 @@ D10/D11 把 Hand Token 升级为**双向手部运动互操作层**。v2 在 v1 (
 
 ### 1b.3 双向映射 (ingest / export)
 - **Ingest**: Noitom/Hi5 (20关节 x,y,z,w, 近1:1) · Manus (skeleton w,x,y,z 或 ergo 角) · Rokoko (15骨 keyed quat, 补掌骨) · OpenXR (26→去派生, global→local) · BVH (Euler ZXY→quat, 名重映射) · mHand (经 BVH 导出, schema 待核实)。
-- **Export**: MANO (20→16 折掌骨, θ/β) · BVH/FBX (HIERARCHY+MOTION) · OpenXR/SteamVR (派生 palm/指尖/Aux) · ROS2 (`JointState` name/position/**effort=force**, `PoseStamped` 腕 x,y,z,w) · 21 MediaPipe (FK 派生)。
+- **Export**: MANO (20→16 折掌骨, θ/β) · BVH/FBX (HIERARCHY+MOTION) · OpenXR/SteamVR (派生 palm/指尖/Aux) · ROS2 (`JointState` name/position/**effort=force**, `PoseStamped` 腕 x,y,z,w) · **FreeMoCap** (开放动捕导出生态) · **DexRetargeting/AnyTeleop** (人手→灵巧手 retarget) · 21 MediaPipe (FK 派生)。
 - 完整映射矩阵见 `research_5` §B。
 
 ---

@@ -3,7 +3,7 @@
 > **Date**: 2026-07-27
 > **Status**: 🔒 待用户 P0 冻结签核 (Design frozen pending sign-off) — **签核前不写实现代码**
 > **Owner**: PaxonHuang
-> **Decision**: 实现 STRATEGY.md **D11**（细化 D10）
+> **Decision**: 实现 STRATEGY.md **D11 + D12**（细化 D10）
 > **研究底稿**: `../../BP/research_5_data_formats_interop.md`（源实时核对，高/中/待核实分级）
 > **绑定文档**: `../../V7/STRATEGY.md` §1 D11 · `../../V7/07_dual_rep_layer.md` §1b · `../../V7/ARCHITECTURE.md` §3/§8
 > **前置**: Hand Token v1（79B 定长帧）已实现于 `firmware/shared/hand_token.{h,c}` + `relay/hand_token.py`，v2 **永久兼容 v1**。
@@ -26,6 +26,20 @@ research_5 落地后暴露一个 D10 表述内的**张力**，需要在协议层
 
 > **为何"细化"而非推翻 D10**：D10 的战略实质（格式先行、双向互操作、21 为生态锚点、硬件不变）全部保留；D11 只把"通用 21-joint 骨架"的**内部实现**精确化为"20 旋转主 + 派生 21"。
 
+**D12 生态对齐**：EgoGlove = 开放 **Hand Motion Infrastructure**，**非** Hi5/Manus/mHand 竞品——厂商手套是**外部数据源/适配器**。Hand Token v2 是**厂商无关的通用中间表示**（不围绕任何厂商手套设计），方向锚定 MANO/SMPL-X · FreeMoCap · OpenXR Hands · ROS2·DexRetargeting/AnyTeleop · egocentric-AI 数据集。四段管线：
+
+```
+Sensor Source (flex / IMU / vision / external gloves)
+        ↓  ingest / encode
+Hand Token v2             (通用中间表示 = 自描述 wire 帧, 本 spec §4)
+        ↓  decode
+Canonical Skeleton Layer (20 旋转关节, §3; FK 派生 21)
+        ↓  export / retarget
+MANO / OpenXR / FreeMoCap / ROS2 / Robot   (经 DexRetargeting/AnyTeleop)
+```
+
+> Hand Token v2（序列化载体）与 Canonical Skeleton Layer（解码后的 20 关节语义模型）是同一设计的两面：v2 帧承载骨架，消费者解码为 canonical 骨架后再 export/retarget。
+
 ---
 
 ## 2. 目标与非目标
@@ -43,6 +57,7 @@ research_5 落地后暴露一个 D10 表述内的**张力**，需要在协议层
 ### 2.2 非目标（本 spec 明确不做，YAGNI）
 
 - ❌ **不改硬件方向**（D10）：Lite 仍 `flex(5) + 单腕 IMU`；Pro 多 IMU 指节仅路线图，本 spec 不启动。
+- ❌ **不启动 IMU 阵列竞争**（D12）：不做"每指节 9 轴 IMU"军备竞赛去对标 Hi5/mHand 硬件；专注协议 / 互操作 / 生态。厂商手套 = 外部源/适配器，非竞品。
 - ❌ **不实现真实 flex→θ/β 回归 / joint→URDF retarget**（属 `models/mano/`、`models/robot/`，本 spec 只定义承载它们的**格式**）。
 - ❌ **不改 v1 wire 契约**：v1 79B 定长帧字节不变、永久有效。
 - ❌ **不写实现代码**：本 spec 是 P0 签核对象；代码在签核 + `writing-plans` 后。
@@ -215,16 +230,16 @@ research_5 落地后暴露一个 D10 表述内的**张力**，需要在协议层
 
 ---
 
-## 8. 实现分期 (D10 优先级 → 本 spec 落地顺序)
+## 8. 实现分期 (D12 确认的 P0–P3 优先级)
 
 | 阶段 | 内容 | 真实性目标 |
 |---|---|---|
-| **P0** | 本 spec 冻结签核（当前）；v2 wire format（caps/TLV/version-gate）+ 金标帧 | 🟡 代码待写 |
-| **P1** | canonical-20 骨架抽象层（C struct + Python `HandTokenV2` + FK 派生 21） | 🟡 |
-| **P2** | 外部手套适配器（先 Noitom/Manus 近 1:1；OpenXR；Rokoko；BVH；mHand 待 schema） | 🟡→🔬 |
-| **P3** | 导出器（MANO / BVH / FBX / OpenXR / ROS2） | 🟡→🔬 |
+| **P0** | **冻结 canonical 骨架 + Hand Token v2**：本 spec 签核 → v2 wire format(caps/TLV/version-gate) + canonical-20 骨架抽象层(C struct + Python `HandTokenV2` + FK 派生 21) + 跨语言金标帧 | 🟡 代码待写 |
+| **P1** | **构建 adapters(ingest) + exporters**：ingest(Noitom/Manus 近 1:1 · OpenXR · Rokoko · BVH) + export(MANO · BVH/FBX · OpenXR · ROS2 · FreeMoCap · DexRetargeting/AnyTeleop)。可用录制流/schema 离线做，无需物理设备 | 🟡→🔬 |
+| **P2** | **集成外部物理设备**：Hi5 / Manus / mHand 接真实设备流(用 P1 适配器)。mHand schema 待核实 → 暂经 BVH 导出 ingest | 🔬 |
+| **P3** | **未来 Pro 硬件扩展**：多 IMU 指节等，**仅路线图**(不改当前硬件决策，不启 IMU 阵列竞争) | 🌌 |
 
-> P0/P1 是纯格式 + FK（可 host 单测，无硬件依赖）= 🟡。P2/P3 依赖第三方 SDK/权威 schema，部分 🔬（mHand schema、Hi5 独立 SDK struct 待核实）。
+> P0 = 纯格式 + FK（可 host 单测，无硬件依赖）。P1 = 协议侧软件（用 recorded streams/schema，无需物理设备）。P2 依赖第三方 SDK / 物理设备（mHand schema、Hi5 独立 SDK struct 待核实）。P3 = 长期路线图。**厂商手套 = 外部源/适配器，非竞品（D12）。**
 
 ---
 
@@ -251,6 +266,7 @@ research_5 落地后暴露一个 D10 表述内的**张力**，需要在协议层
 - [ ] 21 MediaPipe = **FK 派生视图**，不进 wire 帧（§3.4）
 - [ ] smallest-three **延后到 v2.1**，v2.0 首发只 f16×4（§9 建议）
 - [ ] 非目标边界（§2.2，尤其"不改硬件、不写回归/retarget、不改 v1"）
+- [ ] **生态对齐（D12）**：非竞品定位 + 厂商无关 v2 + 四段管线（§1）+ P0–P3 优先级（§8）
 
 签核后 → `superpowers:writing-plans` 生成 TDD 实现计划 → firmware/shared C + relay Python 镜像 + 金标测试。
 
@@ -259,7 +275,7 @@ research_5 落地后暴露一个 D10 表述内的**张力**，需要在协议层
 ## 相关
 
 - `../../BP/research_5_data_formats_interop.md` — 格式互操作研究底稿（§A canonical-20 / §B 映射矩阵 / §C TLV 帧 / §D MANO 优势）
-- `../../V7/STRATEGY.md` — D10 / D11 战略冻结
+- `../../V7/STRATEGY.md` — D10 / D11 / D12 战略冻结
 - `../../V7/07_dual_rep_layer.md` §1b — v2 Skeleton Layer 摘要
 - `../../V7/ARCHITECTURE.md` §3/§8 — 数据流 + 真实性总表
 - `firmware/shared/hand_token.{h,c}` + `relay/hand_token.py` — v1 实现（v2 复用 base 块 + CRC/f16）

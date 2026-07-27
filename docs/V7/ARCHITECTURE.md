@@ -3,7 +3,7 @@
 > **Version**: V7.0
 > **Date**: 2026-07-24
 > **Status**: Design target (V7)
-> **Implements**: `STRATEGY.md` D1–D11
+> **Implements**: `STRATEGY.md` D1–D12
 > **Supersedes**: V6.0 架构（Beta 仓库 docs/V6/01_architecture_diagrams.md）
 
 本文件描述 V7 双产品线（Lite/Pro）的目标系统架构。所有能力描述带四级真实性标注：✅ 已实现 / 🟡 工程可实现（6-12 月）/ 🔬 需研发验证 / 🌌 长期方向。
@@ -17,6 +17,7 @@
 3. **推理分工诚实化**：传感器预处理在 MCU，AI 推理在 edge gateway / 移动 / 云（<3ms TinyML 跑不了完整 Transformer+fusion）。
 4. **开放生态**（D4/D5）：兼容 PyTorch / TFLite / ROS2 / Unity / Unreal / MANO / MediaPipe。
 5. **双产品线共享核心**（D6）：`firmware/shared/` 跨 Lite/Pro 复用协议、校准、Hand Token 生成。
+6. **开放手部运动基础设施 / 非竞品**（D12）：EgoGlove **不**对标 Hi5/Manus/mHand 硬件；厂商手套 = **外部数据源/适配器**。方向锚定 MANO/SMPL-X · FreeMoCap · OpenXR Hands · ROS2·DexRetargeting/AnyTeleop · egocentric-AI 数据集。Hand Token v2 = **厂商无关**通用中间表示。
 
 ---
 
@@ -89,6 +90,8 @@
 **Hand Token 规范**（v1 已实现待测 ✅→🟡；v2 Skeleton Layer 设计冻结 D11 🟡）：
 
 > **v2 = Skeleton Layer（D10/D11，位于双表示层上游）**：管线细化为 `Sensor → Skeleton Layer(20-rotation canonical Hand Token v2, 派生 21 MediaPipe) → {MANO Layer, Robot Action Layer} + BVH/FBX/OpenXR/ROS 导出器`，且可被第三方手套(Hi5/mHand/Manus/Rokoko/OpenXR)在 Skeleton Layer 注入(ingest)。canonical=20 旋转关节(⊃MANO-16, =Noitom Axis-20, =OpenXR去派生)；v1(79B) 永久兼容, v2=capability-flagged TLV 变长帧。详见 `07_dual_rep_layer.md` §1b + `../BP/research_5_data_formats_interop.md`。
+
+> **D12 生态对齐 — 开放手部运动基础设施（非竞品）**：EgoGlove 不是 Hi5/Manus/mHand 竞品；厂商手套 = **外部数据源/适配器**。通用四段管线：`Sensor Source(flex/IMU/vision/外部手套) → Hand Token v2(通用中间表示) → Canonical Skeleton Layer(20 旋转关节, FK 派生 21) → MANO / OpenXR / FreeMoCap / ROS2 / Robot(经 DexRetargeting/AnyTeleop)`。Hand Token v2 **不围绕任何厂商设计**。优先级 P0 冻结骨架+v2 · P1 adapters/exporters · P2 集成 Hi5/Manus/mHand · P3 Pro 硬件扩展。详见 `STRATEGY.md` D12。
 
 | 字段 | 维度 | 说明 | 真实性 |
 |------|------|------|--------|
@@ -179,6 +182,10 @@ data/               → Open Core (open/) + Commercial (commercial/, gitignore)
 | ROS2 SDK | 🟡 | 待实现 |
 | Hand Token v1 协议 (79B 帧) | 🟡→✅ | 实现完成待首轮测试确认 (`firmware/shared` + `relay`) |
 | Hand Token v2 Skeleton Layer (20-rotation, TLV) | 🟡 | 设计冻结 (D11); spec `docs/superpowers/specs/2026-07-27-hand-token-v2-design.md`; 代码待写 |
+| 生态导出器 (MANO/OpenXR/FreeMoCap/ROS2) | 🟡 | 格式导出器待写 (D12 P1) |
+| DexRetargeting/AnyTeleop 机器人手 retarget | 🔬 | 人手→灵巧手 retarget 桥, 待接 (D12 P1) |
+| 外部手套物理集成 (Hi5/Manus/mHand) | 🔬 | 适配器接真实设备流 (D12 P2); mHand schema 待核实 |
+| egocentric/InterHand2.6M/WholeBody 数据集兼容 | 🌌 | 具身智能数据飞轮 (D12), 长期方向 |
 | MANO 双表示层 | 🟡 | `to_mano`/`to_robot_action` 结构视图; 真实 θ/β 回归与 retarget 待 `models/` |
 | MediaPipe+glove 融合 | 🟡 | 待实现 |
 | 连续手语 benchmark | 🔬 | 需建，延迟/WER/连续准确率 |
@@ -190,7 +197,7 @@ data/               → Open Core (open/) + Commercial (commercial/, gitignore)
 
 ## 相关文档
 
-- `STRATEGY.md` — 战略冻结（D1–D11）
+- `STRATEGY.md` — 战略冻结（D1–D12）
 - `01_architecture_diagrams.md` — 详细架构图（V7 版）
 - `02_BOM_table.md` — Lite/Pro BOM
 - `04_SOP-SPEC-PLAN_V7.md` — 主规格书
