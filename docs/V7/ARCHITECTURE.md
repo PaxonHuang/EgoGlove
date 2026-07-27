@@ -3,7 +3,7 @@
 > **Version**: V7.0
 > **Date**: 2026-07-24
 > **Status**: Design target (V7)
-> **Implements**: `STRATEGY.md` D1–D9
+> **Implements**: `STRATEGY.md` D1–D11
 > **Supersedes**: V6.0 架构（Beta 仓库 docs/V6/01_architecture_diagrams.md）
 
 本文件描述 V7 双产品线（Lite/Pro）的目标系统架构。所有能力描述带四级真实性标注：✅ 已实现 / 🟡 工程可实现（6-12 月）/ 🔬 需研发验证 / 🌌 长期方向。
@@ -86,7 +86,9 @@
                                                                                    └─────────────────┘
 ```
 
-**Hand Token 规范**（🟡 待定义，目标字段）：
+**Hand Token 规范**（v1 已实现待测 ✅→🟡；v2 Skeleton Layer 设计冻结 D11 🟡）：
+
+> **v2 = Skeleton Layer（D10/D11，位于双表示层上游）**：管线细化为 `Sensor → Skeleton Layer(20-rotation canonical Hand Token v2, 派生 21 MediaPipe) → {MANO Layer, Robot Action Layer} + BVH/FBX/OpenXR/ROS 导出器`，且可被第三方手套(Hi5/mHand/Manus/Rokoko/OpenXR)在 Skeleton Layer 注入(ingest)。canonical=20 旋转关节(⊃MANO-16, =Noitom Axis-20, =OpenXR去派生)；v1(79B) 永久兼容, v2=capability-flagged TLV 变长帧。详见 `07_dual_rep_layer.md` §1b + `../BP/research_5_data_formats_interop.md`。
 
 | 字段 | 维度 | 说明 | 真实性 |
 |------|------|------|--------|
@@ -175,7 +177,9 @@ data/               → Open Core (open/) + Commercial (commercial/, gitignore)
 | LSM6DSV16X IMU 驱动 | 🟡 | 驱动不存在，IMU 输出全零 |
 | S3→P4 有线 UART | 🟡 | `WIRED_UART` 设计但不在代码 |
 | ROS2 SDK | 🟡 | 待实现 |
-| MANO 双表示层 | 🟡 | Hand Token 规范待定义 |
+| Hand Token v1 协议 (79B 帧) | 🟡→✅ | 实现完成待首轮测试确认 (`firmware/shared` + `relay`) |
+| Hand Token v2 Skeleton Layer (20-rotation, TLV) | 🟡 | 设计冻结 (D11); spec `docs/superpowers/specs/2026-07-27-hand-token-v2-design.md`; 代码待写 |
+| MANO 双表示层 | 🟡 | `to_mano`/`to_robot_action` 结构视图; 真实 θ/β 回归与 retarget 待 `models/` |
 | MediaPipe+glove 融合 | 🟡 | 待实现 |
 | 连续手语 benchmark | 🔬 | 需建，延迟/WER/连续准确率 |
 | 柔性 eSkin / Force | 🔬 | Pro 升级方向 |
@@ -186,8 +190,10 @@ data/               → Open Core (open/) + Commercial (commercial/, gitignore)
 
 ## 相关文档
 
-- `STRATEGY.md` — 战略冻结（D1–D9）
+- `STRATEGY.md` — 战略冻结（D1–D11）
 - `01_architecture_diagrams.md` — 详细架构图（V7 版）
 - `02_BOM_table.md` — Lite/Pro BOM
 - `04_SOP-SPEC-PLAN_V7.md` — 主规格书
+- `07_dual_rep_layer.md` — 双表示层 + Hand Token v1/v2 (Skeleton Layer)
+- `../BP/research_5_data_formats_interop.md` — 手部数据格式互操作研究底稿
 - `../BP/EchoGlove_BP_V2.1.md` — 产业级 BP

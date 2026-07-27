@@ -12,7 +12,7 @@ EgoGlove 是**具身智能人机交互入口公司**的基础设施层。主航�
 - **MANO Layer** → Unity/Unreal/XR/数字人/手语
 - **Robot Action Layer** → joint angle + 6DoF 腕位姿 + 速度/加速度 + 接触状态 + 力估计 → ROS2/机械臂/灵巧手/VLA/RL
 
-冻结战略决策见 `docs/V7/STRATEGY.md`（D1–D9 全部冻结）。所有 BP/白皮书/产业合作材料按此编写，不得偏离。
+冻结战略决策见 `docs/V7/STRATEGY.md`（D1–D11 全部冻结）。所有 BP/白皮书/产业合作材料按此编写，不得偏离。
 
 ## 2. 仓库结构（Monorepo）
 

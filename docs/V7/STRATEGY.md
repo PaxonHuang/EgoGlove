@@ -2,7 +2,7 @@
 
 > **Version**: V7.0
 > **Date**: 2026-07-24
-> **Status**: Frozen (D1–D10 全部冻结)
+> **Status**: Frozen (D1–D11 全部冻结)
 > **Supersedes**: V6.0 战略 (Beta 仓库 docs/V6/)
 > **来源**: 用户与 GPT5.6 对话校验 + 代码实测修正 (2026-07-22/23)
 
@@ -38,6 +38,7 @@
 | D8 | 手语模型 | 保留但战略降级 —— 手语是 Hand Token 的一种解释方式，非唯一输出 | 2026-07-23 |
 | D9 | Pro 视觉接口 | **C 双生态兼容**：USB-C/WiFi/BT（消费侧接 AI 眼镜）+ ROS2/Ethernet/USB3 Vision（机器人侧） | 2026-07-23 |
 | D10 | 数据格式路线 | **格式先行 + Open Hand Motion Infrastructure**：不对标 Hi5/mHand 硬件；Hand Token 升级为双向互操作层（通用 21-joint 骨架）；硬件方向不变（Lite=flex+单IMU→IK/ML 估计 21 关节；Pro 多 IMU 仅路线图，现在不启动） | 2026-07-26 |
+| D11 | v2 canonical 表示 | **20 旋转关节为主表示 + 派生 21**：Hand Token v2 内部 canonical = 20-joint 旋转骨架（quaternion+rest-offset），前向运动学派生 21 MediaPipe 关键点位置作导出视图。**细化 D10**（21 仍是对外/视觉锚点与 web 前端）；换取对 Hi5/mHand/Manus/OpenXR 的无损 ingest | 2026-07-27 |
 
 ---
 
@@ -64,6 +65,18 @@ Hand Token 成为**双向手部运动互操作层**：既能 **ingest** 第三�
 **优先级**：`P0` 冻结 Hand Token v2 数据模型 · `P1` 骨架抽象层 · `P2` 外部手套适配器 · `P3` MANO/BVH/FBX/OpenXR/ROS 导出器。
 
 > **与 D3 关系**：D10 在 D3 双表示层（MANO + Robot Action）**上游**新增通用 Skeleton Layer。管线变为 `Sensor → Skeleton Layer(21-joint Hand Token v2) → {MANO Layer, Robot Action Layer} + 各格式导出器`，且可被外部手套在 Skeleton Layer 注入。**强化而非取代 D3**。21-joint 与 MANO(16)/OpenXR(26) 可互映射。
+
+---
+
+### D11 详解 — v2 canonical = 20 旋转关节为主 + 派生 21（2026-07-27 冻结，用户拍板；细化 D10）
+
+研究 `research_5_data_formats_interop.md` 落地后, 明确 **21 MediaPipe 关键点是"位置"表示**(视觉/web 语系), 而 Hi5/mHand/Manus/OpenXR 等专业手套输出的是**"旋转"表示**(每关节四元数)。二者不可互相替代: 只存 21 位置无法无损 ingest 旋转骨架 (丢关节朝向), 只存旋转则需 FK 才得位置。用户拍板采**调和方案**:
+
+- **canonical 主表示 = 20 旋转关节** (腕1 + 拇指3[CMC/MCP/IP] + 4指×4[掌骨/近节/中节/远节]; 指尖派生)。理由: = Noitom Axis 每手20、= OpenXR-26 去 6 可派生 (PALM+5指尖)、⊃ MANO-16 (多出4非拇指掌骨)、覆盖 SteamVR 20 DOF 骨。**是无损 ingest 专业手套的最小完整旋转集**。四元数 `w,x,y,z` (w-first, 与 v1 一致)、父相对、右手 +Y up/-Z fwd; 附 rest-offset 表。
+- **21 MediaPipe = 派生导出视图**: 由 20 旋转 + rest-offset 经前向运动学派生 (16 MANO 关节 + 5 指尖位置 ≈ MediaPipe 21)。**D10 的 21-keypoint 对外锚点、web 前端、视觉融合公共空间全部不变**——只是内部主存储从"位置"改为"旋转"。
+- **v1 保持不变**; **v2 = capability-flagged TLV 变长帧** (magic `HT`, version `0x02`, `caps` 位域声明四元数序/handedness, `total_len`, v1兼容 base 块 + TLV 区; 未知 TLV 按长度跳过)。Lite ~82B、Pro/ingested ~166–246B。version-gate 向后兼容。详见 `07_dual_rep_layer.md` v2 章与 `docs/superpowers/specs/2026-07-27-hand-token-v2-design.md`。
+
+> **为何是"细化"而非推翻 D10**: D10 的战略实质(格式先行、双向互操作、21 为生态锚点、硬件不变)全部保留; D11 只是把"通用 21-joint 骨架"的**内部实现**精确化为"20 旋转主 + 派生 21", 以获得 D10 追求的"无损 ingest 第三方手套"能力。管线更新为 `Sensor → Skeleton Layer(v2: 20-rotation canonical, 派生 21) → {MANO, Robot Action} + BVH/FBX/OpenXR/ROS 导出器`。
 
 ---
 
@@ -137,7 +150,7 @@ Sensor Stream ──→ Hand Token ──┤
 
 ## 8. 战略变更评审
 
-D1–D9 全部冻结，进入 BP 撰写与产品落地阶段。任何战略变更需：
+D1–D11 全部冻结，进入 BP 撰写与产品落地阶段。任何战略变更需：
 1. 在本文件追加 Dn 条目并标注日期
 2. 同步更新 `docs/BP/` 与 `docs/V7/ARCHITECTURE.md`
 3. commit 信息注明 "strategic change: Dn"

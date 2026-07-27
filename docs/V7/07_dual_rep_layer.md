@@ -2,8 +2,8 @@
 
 > **Version**: V7.0
 > **Date**: 2026-07-25
-> **Status**: 协议层已实现待测 (host 单测 / pytest 金标) · 语义映射 🟡
-> **参见**: `STRATEGY.md` D3, `ARCHITECTURE.md` §2/§3
+> **Status**: v1 协议层已实现待测 (host 单测 / pytest 金标) · v2 Skeleton Layer 设计冻结待实现 (D11) · 语义映射 🟡
+> **参见**: `STRATEGY.md` D3/D10/D11, `ARCHITECTURE.md` §2/§3, `../BP/research_5_data_formats_interop.md`
 
 双表示层是 EchoGlove 的核心壁垒 (D3): 同一硬件传感器流, 统一为 Hand Token, 再分叉为 MANO Layer (数字人侧) 与 Robot Action Layer (机器人侧), 互不污染。本文件定义 Hand Token 规范与两层映射。
 
@@ -60,6 +60,51 @@ Hand Token = 跨产品线 (Lite/Pro) 统一的归一化手部状态向量。
 - **跨语言金标**: canonical 79B 参考帧由 host C 单测 (`firmware/shared/test/`) 与 `relay/test_hand_token.py` 共用同一 `GOLDEN_HEX`, 双向断言逐字节一致。
 
 实现: `firmware/shared/hand_token.{h,c}` (序列化/解析/CRC/f16) + `relay/hand_token.py` (Python 镜像 + 双表示层分叉)。
+
+---
+
+---
+
+## 1b. Hand Token v2 — Skeleton Layer 互操作层 (D11 冻结, 代码待实现 🟡)
+
+> **状态**: 设计冻结 (D11, 2026-07-27 用户签核) · spec = `docs/superpowers/specs/2026-07-27-hand-token-v2-design.md` · 研究底稿 = `../BP/research_5_data_formats_interop.md` · **协议代码未写** (下一阶段 TDD 落地)。v1 (§1.2) 保持不变并永久兼容。
+
+D10/D11 把 Hand Token 升级为**双向手部运动互操作层**。v2 在 v1 (Sensor-level 紧凑帧) 之上引入 **Skeleton Layer**: 通用手部骨架表示, 可 ingest 第三方手套 (Hi5/mHand/Manus/Rokoko/OpenXR) 并 export 到生态 (MANO/BVH/FBX/OpenXR/ROS)。
+
+### 1b.1 canonical 骨架 = 20 旋转关节 (D11)
+```
+ 0  Wrist (根; 全局腕位姿单独承载)
+ 拇指: 1 CMC(Metacarpal) → 2 MCP(Proximal) → 3 IP(Distal)
+ 食/中/无名/小指(各4): Metacarpal → Proximal → Intermediate(PIP) → Distal
+   食 4-7 · 中 8-11 · 无名 12-15 · 小 16-19
+ 指尖(5) = 派生 (每 Distal 经 rest-offset 固定偏移), 不存储
+```
+- **四元数 `w,x,y,z` (w-first, 与 v1 一致), 父相对, 右手 +Y up/-Z fwd/+X right, 米。**
+- **= Noitom Axis 每手20 · = OpenXR-26 去 6 可派生 · ⊃ MANO-16** → 无损 ingest 专业手套的最小完整旋转集。
+- **21 MediaPipe 关键点 = 派生视图** (20 旋转 + rest-offset 经 FK → 16 MANO 关节 + 5 指尖位置)。D10 的 21 对外锚点/web 前端/视觉融合公共空间不变。
+- 四元数分量顺序**不通用** (w-first: v1/Manus/Rokoko; w-last: OpenXR/glTF/ROS2/Noitom) → v2 帧头 `caps` 显式声明并在 ingest/export swap。
+
+### 1b.2 v2 二进制帧 (capability-flagged TLV 变长, version 0x02, 待实现)
+| off | len | field | 说明 |
+|---|---|---|---|
+| 0 | 2 | magic `"HT"` | 不变 (0x48 0x54) |
+| 2 | 1 | version=`0x02` | 新值; v1-only 解析器在此干净拒绝 |
+| 3 | 1 | device_id | 不变位域 (product\|hand\|serial) |
+| 4 | 4 | timestamp_us | 不变 uint32 LE |
+| 8 | 1 | caps 位域 | bit0 HAS_SKELETON, bit1 HAS_FORCE, bit2 HAS_VEL/ACC, bit3 GLOBAL_WRIST, bit4 QUAT_WLAST(0=wxyz), bit5 HANDEDNESS/axis, bit6 SKEL_SMALLEST3(0=f16×4), bit7 reserved |
+| 9 | 2 | total_len | 新 uint16 LE, 全帧含 CRC |
+| 11 | .. | BASE BLOCK | v1兼容核 (Lite 发, SKELETON=0): flex[5]f16·quat[4]f16(腕)·wrist_6dof[6]f32·vel[3]f16·acc[3]f16·contact[5]u8·force[5]f16 |
+| .. | .. | TLV REGION | 0+ 条 {type u8, len u16 LE, value[len]}; 未知类型按 len 跳过 |
+| end-2 | 2 | crc16 | CRC-16/MODBUS over [0…crc), 小端 (同 v1) |
+
+**TLV 初始注册表**: `0x01 SKELETON_QUAT20` (20×quat, f16×4=160B 或 smallest-three=80B) · `0x02 REST_OFFSETS` (20×(dx,dy,dz)f16, 使能 FK/派生21) · `0x03 JOINT_ANGLES` (Manus-ergo 式紧凑角/快速 retarget) · `0x04 GLOBAL_WRIST_POSE` · `0x05 FINGERTIP_CONTACT_FORCE` · `0x06 SOURCE_PROVENANCE` (厂商id+源格式+fps) · `0x07 HAND_SHAPE_BETA` (MANO β 10×f16)。
+
+**载荷**: Lite `[头11B]+[base 69B]+[crc 2B] ≈ 82B` (≈v1 +3B); Pro/ingested + `SKELETON_QUAT20` ≈ 166–246B。version-gate 向后兼容: v1 帧永久有效, v2 解析器兼收。
+
+### 1b.3 双向映射 (ingest / export)
+- **Ingest**: Noitom/Hi5 (20关节 x,y,z,w, 近1:1) · Manus (skeleton w,x,y,z 或 ergo 角) · Rokoko (15骨 keyed quat, 补掌骨) · OpenXR (26→去派生, global→local) · BVH (Euler ZXY→quat, 名重映射) · mHand (经 BVH 导出, schema 待核实)。
+- **Export**: MANO (20→16 折掌骨, θ/β) · BVH/FBX (HIERARCHY+MOTION) · OpenXR/SteamVR (派生 palm/指尖/Aux) · ROS2 (`JointState` name/position/**effort=force**, `PoseStamped` 腕 x,y,z,w) · 21 MediaPipe (FK 派生)。
+- 完整映射矩阵见 `research_5` §B。
 
 ---
 
@@ -181,6 +226,7 @@ class HandTokenSDK:
 | 能力 | 状态 | 佐证 |
 |------|------|------|
 | Hand Token 二进制协议 (serialize/parse/CRC-16/float16/device_id) | 🟡→✅ **实现完成, 待首轮测试确认** | `firmware/shared/hand_token.{h,c}` + `relay/hand_token.py`; host 单测 + pytest 金标双向校验待运行 |
+| Hand Token **v2** Skeleton Layer (20-rotation canonical, TLV 变长帧) | 🟡 **设计冻结 (D11), 代码待写** | spec `docs/superpowers/specs/2026-07-27-hand-token-v2-design.md`; 研究 `../BP/research_5`; 下一阶段 TDD 落地, v1 永久兼容 |
 | 双表示层分叉 (`to_mano`/`to_robot_action` 结构视图) | 🟡 | `relay/hand_token.py` 结构视图, 非真实回归/重定向 |
 | MANO Layer (flex→θ/β 回归) | 🟡 | `models/mano/` 待实现 |
 | Robot Action Layer (joint retarget) | 🟡 | `models/robot/` 待实现 |
