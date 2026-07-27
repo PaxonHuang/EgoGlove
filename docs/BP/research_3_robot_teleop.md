@@ -63,6 +63,12 @@
 4. **6DoF末端位姿需补充**: VLA主流动作空间(RT-2/OpenVLA/OXE/DROID)是7D末端位姿+夹爪非关节角。EchoGlove原生输出关节角, 兼容OpenX/DROID需提供关节角→末端转换工具链, 否则只能切π0/RH20T/TeleVision关节角路线。
 5. **力/触觉标准化缺失**: OpenX/DROID主流数据集**根本无力/触觉字段**, EchoGlove力数据"无处安放"——需推动数据格式标准化(扩展RLDS schema)才能被生态吸收, 既是劣势也是卡位机会。
 
+### D12 生态桥接 — dex-retargeting/AnyTeleop = 下游 retarget 目标 (非竞品)
+
+> 详见 `research_5_data_formats_interop.md` §E.2。
+
+D12 明确: AnyTeleop / dex-retargeting (表#5) **不是 EchoGlove 竞品**, 而是 Robot Action Layer 的**下游人手→机器人手桥**。管线: EchoGlove Hand Token (20 关节) → FK 派生 21 关键点 → **dex-retargeting** (position/vector/DexPilot 优化) → 机器人 URDF 关节角 (Allegro/Shadow/Leap 等)。**错配点**: dex-retargeting 吃**关键点位置**非四元数, 故先 FK 出位置再喂 (可无损 FK)。这把上文"劣势3 (需经 retargeting 有 embodiment gap)"从劣势重构为**标准互操作**——用生态既有 retarget 层, 不自造。【中, 见 research_5 §E.2】
+
 ### BP用一句话定位
 > EchoGlove是具身智能时代的"Human Data Capture Layer"——以百美元级可穿戴手套, 补齐当前UMI/ALOHA/DexCap生态缺失的"人手侧本体感觉+力/触觉"数据流, 为π0/OpenVLA/RT-2等VLA基础模型提供规模化、低成本、力控密集的高质量人类演示数据, 卡位具身智能人机交互入口与遥操作数据采集主航道。
 

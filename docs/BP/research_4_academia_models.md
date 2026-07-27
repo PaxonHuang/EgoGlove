@@ -153,6 +153,20 @@
 - **电容式**: 柔性平行板/叉指电极, 线性好迟滞低, 亚度级分辨率。寿命长(10^5+, 无直流)。**精度与寿命最优, 适合高端产品线, 需走线屏蔽设计**。
 - **磁感应式**: 柔性线圈/磁体+霍尔/磁阻, 精度高抗潮湿氧化。非接触磁耦合寿命长。**适合关键关节(拇指对掌)高精度绝对角度**。
 
+## 任务5: 具身智能手部数据集 (数据飞轮兼容, D12 新增)
+
+> 依领域知识撰写 (本会话 WebSearch/WebFetch 后端不可用), 标 【中/待核实】; 详见 `research_5_data_formats_interop.md` §E.3。支撑 D5 数据飞轮 + D12 生态对齐 (数据集兼容目标)。原拟并行研究子代理因 web 卡死被中止, 主循环内联补写。
+
+| 数据集 | 内容 | 手部表示 | 与 EchoGlove 桥 | 标 |
+|---|---|---|---|---|
+| InterHand2.6M (Moon, ECCV2020) | 双手交互 2.6M 帧, Meta/FRL | **MANO 拟合** + 3D 关键点 | canonical-20 ⊃ MANO-16 对齐 | 【中】 |
+| COCO-WholeBody (Jin, ECCV2020) | COCO 全身 133 关键点 (手 42=21×2) | **2D 关键点** | FK 派生 21 对齐 | 【中】 |
+| DexYCB | 手抓取 YCB 物体 | MANO 标注 | ⊃MANO-16 对齐 | 【中】 |
+| Ego4D / EgoBody / Ego-Exo4D / HOI4D / ARCTIC | egocentric 视频/双手-物交互 | 视频/关键点, 部分 MANO | FK 21 或 MANO 对齐 | 【中】 |
+| "HumanEgo" | 用户提及的 egocentric-AI 数据集 | — | — | **【待核实】未检出确切以此为名的 canonical 数据集; 视为 egocentric 泛称, 引用前人工核实** |
+
+**结论**: MANO 标注类 (InterHand2.6M/DexYCB) 与 EchoGlove canonical-20 骨架**直接对齐** (⊃MANO-16); 关键点类 (COCO-WholeBody/egocentric 视频) 经 FK 派生 21 对齐。EchoGlove 可作这些数据集的**低成本传感器侧数据源**, 亦可用其做视觉侧预训练/校验 → D5 数据飞轮跨源复用。**"HumanEgo" 名称待人工核实**, 不作确定引用。
+
 ## 关键发现与建议
 1. **真实可引SOTA数字**: CorrNet CVPR2023 PHOENIX-2014-T Test WER 20.5%; DSTA-SLR(COLING2024)骨架输入轻量更快; PenSLR手套式IMU+柔性词准确率94.58-96.70%; MDPI Sensors 23/6693 Attention-BiLSTM手套98.85%。可直接进BP技术对标章节。
 2. **手部模型推荐**: EchoGlove Unity数字孪生→ MS-MANO(肌肉骨骼+Unity集成)+ manopth(PyTorch可微层); SMPL-X全身化扩展。**所有MPI模型研究用途许可, 商用需向Max Planck Innovation购买商用授权**——BP成本与合规章节须计入。

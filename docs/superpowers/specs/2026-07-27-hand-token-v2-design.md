@@ -198,6 +198,8 @@ MANO / OpenXR / FreeMoCap / ROS2 / Robot   (经 DexRetargeting/AnyTeleop)
 | **BVH / FBX** | 由 20 关节生成 HIERARCHY + MOTION（quat→Euler） | Euler 无损；拓扑/命名映射有损 |
 | **OpenXR / SteamVR** | 合成 26（派生 PALM/指尖）或 31（加 Aux）；w-first→w-last | 指尖/palm 派生 |
 | **ROS2** | `JointState`：name/position(rad)/**effort = force[5]**；腕→`PoseStamped`(quat x,y,z,w) | quat→单 DOF/关节有损（丢离轴旋转） |
+| **FreeMoCap** | FK 派生 21 关键点 → 开放动捕位置语系（CSV/npy/Blender） | 位置视图（反向需 IK；本方向无损）【中】 |
+| **DexRetargeting/AnyTeleop** | FK 派生 21 关键点 → position/vector/DexPilot 优化 → 机器人 URDF 关节角 | retarget 依目标手 DOF；吃位置非四元数【中】 |
 | **21 MediaPipe** | FK 派生（§3.4） | 无损（位置视图） |
 
 > **关键卡位（research_5 §D §6）**：主流 VLA（OXE/RLDS）**无逐关节手、无力/触觉**（手 = 单 1-DOF 夹爪标量）。Hand Token 兼 ingest 专业手套骨架 + export MANO/ROS2 `effort`，Pro `force[5]`/`contact[5]` 填 OXE/DROID 的触觉空洞 = 真正差异化枢纽。
