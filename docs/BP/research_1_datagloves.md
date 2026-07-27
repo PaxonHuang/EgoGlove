@@ -1,6 +1,7 @@
-# 竞品研究 (1/4) — 数据手套/MOCAP手套竞品
+# 竞品研究 (1/5) — 数据手套/MOCAP手套竞品
 
-> 来源: 并行研究Agent, 2026-07-23. 数值来自官方产品页/GitHub README, 未公开项标注, 未编造。
+> 来源: 并行研究Agent, 2026-07-23 (§一~三); 深度惯性/非惯性研究 2026-07-26 (§四~六)。数值来自官方产品页/SDK 文档/GitHub, 未公开项标注, 未编造。
+> **配套**: 数据格式/骨架互操作见 `research_5_data_formats_interop.md` (BVH/MANO/OpenXR/Hi5/mHand/Manus wire schema + Hand Token v2 枢纽设计)。
 
 ## 一、商用数据手套/MOCAP手套矩阵
 
@@ -48,5 +49,50 @@
 
 8. **国产化与供应链**: Noitom虽国产但价格不透明/闭源/无数据平台; 其余均海外。**EchoGlove国产+开源+数据平台定位, 在京东/WRC/国产替代语境下无直接对手**。
 
+## 四、惯性/混合/磁传感手套深度矩阵 (2026-07-26 深度研究)
+
+> 来源: 深度研究Agent, 2026-07-26。经 headless 浏览器抓官方 SDK 文档/spec 页/经销商页 (sdk.rokoko.com, github.com/pnmocap/MocapApi, manus-meta.com/products/compare-gloves, Noitom, Virdyn gzvirdyn.com)。**关键发现: "每指节 9轴 IMU + AHRS" 的心智模型只对部分产品成立** —— 仅 Noitom (Hi5/PN Studio) 与 Virdyn (mHand/mHand Pro) 是纯惯性; Rokoko/Manus 已迁离纯 IMU。
+
+| 产品 | 传感器/手 | 轴/类型 | 位置? | 融合&标定 | 输出/骨架 | 速率 | 延迟 | 定价 | 流/格式 |
+|---|---|---|---|---|---|---|---|---|---|
+| **Noitom Hi5 (2.0)** | 5–6 IMU(每指) 【待核实数】 | **9轴 IMU** 【高】 | 否(需 Vive tracker) | 专有 AHRS; ~30s B-pose 【高】 | 5指骨架, 每关节 quaternion 【中】 | 500fps算/**120fps出**(v1 180) 【高】 | 待核实 | ~$1k/双, 准专业 【待核实】 | SDK C/C++/C#, Unity/Unreal, **SteamVR** 【中】 |
+| **Noitom PN Studio Gloves** | **6 IMU** 【高】 | **9轴 IMU** 【高】 | 否(属全身系统) | Noitom solver, 磁免疫 【高】 | Avatar joints, quaternion (MocapApi) 【高】 | 待核实(~120类) | "ultra-low" 待核实 | pro 附加件 【待核实】 | Axis Studio, **BVH/FBX**, UDP/TCP, MocapApi, iClone/MoBu/Unity/UE 【高】 |
+| **Rokoko Smartgloves I** | 7 (5指+臂+**hub EMF**) 【高】 | **6轴 IMU + EMF** 【高】 | **是**(EMF 相对 hub; Coil Pro=绝对) 【高】 | 专有 IMU+EMF; **自动init 无手动标定** 【高】 | 每传感器朝向(命名系)→hand-solve 【中】 | **~100fps** 【中】 | 待核实 | ~$2.5k/双, 准专业 【待核实】 | **RGMP v2** UDP, Wi-Fi; Rokoko Studio; Blender/UE/Unity/Maya 【高】 |
+| **Rokoko Smartgloves II** | 7 【高】 | **9轴 IMU + EMF**(加磁力计) 【高】 | **是** 【高】 | +磁力计 heading(LTP) 【高】 | 同上 + heading-reliable flags 【高】 | **250Hz** 【中】 | 待核实 | 准专业 【待核实】 | RGMP v2 UDP/**USB**, Wi-Fi 【高】 |
+| **Manus Quantum Metagloves** | **5 EMF 指尖** + hand IMU 【高】 | **磁/EMF** 6-DoF 指尖 + 3轴 IMU 【高】 | **是**(绝对指尖位置) 【高】 | Hand Solver 3; **4步~50s** 标定 【高】 | **25-DoF 解剖手** (CMC/MCP/PIP/DIP; 拇指 CMC/MCP/IP); user+retarget skeleton 【高】 | **120Hz** 【高】 | **30ms 有线/50ms 无线** 【高】 | 高端 pro 【待核实】 | MANUS Core 3.0, BT5.0/USB-C, **SteamVR**, UE/Unity/MoBu, FBX 【高】 |
+| **Manus Prime X / Prime 3** | ~10 flex(2/指) + 5指 IMU 【高】 | **Flex + 9-DoF IMU/指** 【高】 | 否(相对) | MANUS Core solver 【中】 | MANUS 手骨架 【中】 | ~90Hz 【待核实】 | 待核实 | ~$2–3k/双 【待核实】 | MANUS Core, SteamVR, UE/Unity/MoBu/iClone 【高】 |
+| **Virdyn mHand Pro (虚拟动点)** | **16 节点** 9轴 IMU + 指关节 【中, 数待核实】 | **9轴 IMU** (每指节) 【高】 | 否(Vive/Quest/PICO tracker) 【高】 | 惯性 solver; mHand Studio 【中】 | 手骨架; UDP 数据流 【中】 | ~800Hz 声称 【待核实】 | **<30ms** 【高】 | **≈€1,550/双**, 准专业 【高】 | **UDP**, C++/C#/Linux SDK, Unity/UE4/UE5/MoBu/Maya/3DMAX; 18手势 【高】 |
+| **SenseGlove Nova 2** | 1 腕 IMU + 指 flex 【高】 | **9轴腕 IMU + flex** 【高】 | 否(外部 tracker) | 朝向 IMU 【高】 | 有限 DoF 手 + 触觉 【高】 | 待核实 | 待核实 | ~$5k+, pro 触觉 【待核实】 | SenseGlove SDK, Unity/UE 【中】 |
+| **Weart TouchDIVER Pro** | 指模块(拓扑待核实) | 待核实 | ~2mm 指追踪 【中】 | WEART 数字手模型 【中】 | WEART SDK 手模型 【中】 | 待核实 | 待核实 | **€3,900**, pro 触觉 【中】 | WEART SDK, Unity/UE 【中】 |
+| **Movella/Xsens Prime 3** | = Manus Prime 3 (rebrand) 【高】 | Flex + IMU 【高】 | 否 | MANUS/Xsens 【高】 | Xsens body + Manus hand 【高】 | ~90Hz 【待核实】 | 待核实 | pro 【待核实】 | MVN/BVH/FBX + MANUS Core 【高】 |
+
+**关键洞察 (对 EgoGlove 兼容策略)**:
+1. **市场已分叉**: 纯惯性 (Noitom/Virdyn, 只出朝向, 位置需外部 tracker) vs 位置承载磁/混合 (Manus Quantum 绝对指尖位置、Rokoko EMF 相对 hub)。**通用格式不能只是"每关节四元数"** —— 必须把 position 作一等可选通道 (详见 research_5 §8/§A)。
+2. **用户点名的三家**: **mHand Pro=纯9轴IMU每指节** (最贴合原始心智模型), **Hi5=纯9轴IMU每指**, **Rokoko=IMU+EMF混合** (非纯IMU)。兼容三者需同时承载 quaternion 骨架 + 可选 position/fingertip。
+3. **Noitom Axis 每手 20 关节拓扑 = Hand Token v2 canonical-20 的最佳结构匹配** (近 1:1, 见 research_5 §B); mHand 走 BVH 导出可 ingest。
+4. **BVH/FBX 是这些厂商的公共导出格式** (Noitom/Rokoko/mHand/Xsens 皆导 BVH) —— EgoGlove 支持 BVH ingest 即打通大半互操作。
+
+## 五、传感原理横向对比 (非惯性 vs IMU) (2026-07-26)
+
+> 来源: 深度研究Agent, 2026-07-26 (本会话 WebFetch 间歇性中断, 物理原理级标 高, 时效/数值项标 待核实; 唯一实时核实项: bendlabs.com → nitto.com/nbt 301 重定向, Bend Labs 现属 Nitto)。完整版见 research_5 配套与本节。
+
+| 模态 | 核心原理 | 每关节3D朝向? | 外展? | 绝对位姿? | 力? | 漂移/迟滞 | 成本 | 量产一致性 | 原生输出 |
+|---|---|---|---|---|---|---|---|---|---|
+| **IMU 阵列**(基线) | 陀螺/加速/磁融合→每段朝向 | **是** | **是** | 朝向是; **位置否**(需外援) | 否 | 陀螺/yaw漂移; 磁需标定 | 低单件/**中系统** | 好(装配是变量) | **每关节四元数(骨架)** |
+| **Flex 电阻(Spectra)** | 碳墨 R∝曲率 | 否 | 需额外传感 | 否 | 否 | **高**迟滞/漂移/老化 | **低** | **差**(逐件标定) | **标量弯曲/指** |
+| **Flex(Bend Labs/Nitto)** | 软**电容**角位移 | 否(每传感角) | 2轴:部分 | 否 | 否 | **低**迟滞/漂移 | 中 | 好 | 标量**角**(1-2轴) |
+| **电容拉伸(StretchSense)** | 硅胶电容 C∝应变 | 否(多通道标量) | **是** | 否(需 tracker) | 否(运动学手套) | 蠕变/迟滞(粘弹) 中 | **中高** | 中 | **多通道 curl+splay** |
+| **液态金属(EGaIn/Galinstan)** | 微流道 R∝几何(应变) | 否 | 是(若布线) | 否 | **是**(压力几何) | 氧化层漂移; 泄漏/老化 | 研究级; 材料廉 | **差**(制造受限) | **标量应变(或压力)** |
+| **磁-flex(Manus Quantum)** | 指尖磁体+磁强计解算 | 指尖位姿(非每关节quat) | **是** | 朝向靠IMU; **位置需tracker** | 否 | 无机械漂移; **金属畸变** | 中高 | 好(pro产品) | **指尖位置+flex/splay** |
+| **EM 追踪(Polhemus/NDI)** | AC/脉冲DC场+线圈→6DoF | **是**(每传感) | 是(密集) | **是—全6DoF** | 否 | 无漂移; **金属畸变** | **高** | 精密(非消费) | **绝对6DoF/传感** |
+| **压阻/压电力(FSR/PVDF/cap)** | R/C/电荷∝法向(±剪切)力 | **否**(非运动学) | 否 | 否 | **是**(要点) | FSR高; cap低; PVDF仅动态 | 低→高 | FSR/PVDF可量产; 阵列难 | **力/压力(±剪切),接触** |
+| **sEMG(Meta/CTRL-labs)** | 肌肉MUAP→ML解码 | 仅推断 | 推断 | 否 | **是**(意图,含等长力) | 非平稳; 逐会话标定 | 中(数据=护城河) | HW一致; 模型负担 | **解码意图/控制(原始EMG)** |
+
+**选型结论 (对 EchoGlove Lite/Pro)**:
+- **Lite (flex+单IMU)**: 测得 `curl`(每指flex, MCP+PIP常被合并) + `root`朝向(单IMU 3-DoF, yaw漂移, 无位置); `skeleton`/`fingertip`/`splay`/`force` 为**模型推断或空** —— 印证 D10 "IK/ML 估计 21 关节" 的必要性。
+- **Pro (eSkin+力)**: 更密 `curl`(+可能 `splay`) + **`contact_force` (差异化护城河)**; 绝对腕位置仍需外部(光学/EM/UWB)。
+- **Bend Labs 现属 Nitto** (电容角传感, 低迟滞), 是 Lite flex 升级候选; **液态金属**兼具应变+压力但量产一致性差、gallium 腐蚀铝互连, 属 🔬 需研发验证; **磁感应/Hall** 适合拇指对掌高精度绝对角 (呼应 research_4 §柔性传感选型)。
+- **PVDF 压电**只测动态不测静态, 做接触/滑移事件补充; **sEMG** 输出意图非几何, 不适合直接填几何格式, 格式先行策略下延后 (呼应 STRATEGY 传感器升级排序)。
+
 ## 数据可信度说明
-所有数值来自官方产品页/GitHub README(2026-07-23抓取), 未公开项标注, 未编造。HaptX $5,000/LucidVR $60/SenseGlove €3,999-6,299/Rokoko ¥375,000 JPY/StretchSense $895/bHaptics ¥54,900为少数公开价格; Manus/Noitom/CyberGlove价格不透明, BP引用建议注明"询价/订阅制"。
+所有数值来自官方产品页/SDK文档/GitHub README(2026-07-23 及 2026-07-26 抓取), 未公开项标注 待核实, 未编造。HaptX $5,000/LucidVR $60/SenseGlove €3,999-6,299/Rokoko ¥375,000 JPY/StretchSense $895/bHaptics ¥54,900为少数公开价格; Manus/Noitom/CyberGlove价格不透明, BP引用建议注明"询价/订阅制"。
