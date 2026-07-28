@@ -106,7 +106,9 @@ MANO / OpenXR / FreeMoCap / ROS2 / Robot   (经 DexRetargeting/AnyTeleop)
 - `REST_OFFSETS` 固定为 **25 × vec3 f16**：索引 `0..19` 是 canonical joint 的 parent-offset（`0=Wrist` 固定零向量），索引 `20..24` 依次是 Thumb / Index / Middle / Ring / Little 的 Distal→Tip offset。**禁止启发式外推指尖，也不为 v2.0 增加独立 tip TLV。**
 - 每个含 `SKELETON_QUAT20` 的 v2.0 帧必须同时含 `REST_OFFSETS` 与 `REST_MODEL_ID`，使 skeleton / FK / fingertip reconstruction **frame-self-contained**；缺任一项即语义非法。
 - MediaPipe 索引契约（research_5 §3，核对 `HandLandmark` enum）：`WRIST=0`；`THUMB_CMC/MCP/IP/TIP=1..4`；`INDEX 5..8`；`MIDDLE 9..12`；`RING 13..16`；`PINKY 17..20`。
-- 21 是**导出视图**，不进 wire 帧（可由任意消费者本地 FK 得出）；web 前端 / 视觉融合公共空间继续用 21。
+- **冻结映射表**（canonical index → MediaPipe index）：`0→0`；Thumb `1,2,3,tip20 → 1,2,3,4`；Index `5,6,7,tip21 → 5,6,7,8`；Middle `9,10,11,tip22 → 9,10,11,12`；Ring `13,14,15,tip23 → 13,14,15,16`；Little `17,18,19,tip24 → 17,18,19,20`。
+- canonical 的额外掌骨关节 `4/8/12/16` **参与各自父链 FK，但不映射为 MediaPipe MCP，也不直接出现在 MediaPipe-21**。MediaPipe MCP 对应 canonical Proximal `5/9/13/17`；Metacarpal 与 MCP 解剖语义不得混用。
+- 21 是**派生应用视图**，不进 wire 帧且不改变 canonical-20 真相源；web 前端 / 视觉融合公共空间继续用 21。
 
 ---
 

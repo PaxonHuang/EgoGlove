@@ -50,7 +50,7 @@
 
 - [ ] **Step 1: Write failing C tests**
 
-Add tests that assert the exact parent table `{-1,0,1,2,0,4,5,6,0,8,9,10,0,12,13,14,0,16,17,18}`, identity quaternion FK chain accumulation, MediaPipe output ordering, and tips using offsets 20..24. Add negative tests for nonzero wrist offset, model 99, and revision 0.
+Add tests that assert the exact parent table `{-1,0,1,2,0,4,5,6,0,8,9,10,0,12,13,14,0,16,17,18}`, identity quaternion FK chain accumulation, frozen MediaPipe output mapping (`4/8/12/16` excluded but present in each parent chain), and tips using offsets 20..24. Add negative tests for nonzero wrist offset, model 99, and revision 0.
 
 - [ ] **Step 2: Run red test**
 
@@ -59,8 +59,7 @@ Expected: compile FAIL because `hand_skeleton.h` and `hand_skeleton_fk21` do not
 
 - [ ] **Step 3: Implement minimal skeleton module**
 
-Implement quaternion normalization, Hamilton multiplication, vector rotation, parent-chain global transforms, and explicit canonical→MediaPipe mapping:
-`{0,1,2,3,tip20,4,5,6,7,tip21,8,9,10,11,tip22,12,13,14,15,tip23,16,17,18,19,tip24}` collapsed into MediaPipe indices 0..20. Reject unsupported model before FK; no tip extrapolation.
+Implement quaternion normalization, Hamilton multiplication, vector rotation, and parent-chain global transforms. Freeze the derived MediaPipe mapping as `0`; `1,2,3,tip20`; `5,6,7,tip21`; `9,10,11,tip22`; `13,14,15,tip23`; `17,18,19,tip24`. Canonical metacarpals `4/8/12/16` participate in FK parent chains but are excluded from output; canonical Proximal `5/9/13/17` maps to MediaPipe MCP. Reject unsupported model before FK; no tip extrapolation.
 
 - [ ] **Step 4: Run green test**
 
