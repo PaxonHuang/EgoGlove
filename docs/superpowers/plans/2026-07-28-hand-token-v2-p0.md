@@ -19,7 +19,7 @@
 - `REST_MODEL_ID` = `{u16 model_id, u16 revision}` LE；0/1/2 = canonical-human/MANO-aligned/OpenXR-aligned；revision 从 1 起。
 - `HAS_SKELETON` 时 `SKELETON_QUAT20`、`REST_OFFSETS`、`REST_MODEL_ID` 必须各一次。
 - 未知 model 可结构解析，但 FK 返回 unsupported；未知 TLV 按 len 跳过。
-- 三个不可跳过金标：v1 79B、v2 Lite 82B、v2 skeleton 402B。
+- 三个不可跳过金标：v1 79B、v2 Lite 82B、v2 skeleton 405B。
 - 不实现 MANO 回归、robot retarget、厂商 adapter 或硬件改动。
 
 ## File Map
@@ -121,11 +121,11 @@ git commit -m "feat(protocol): add Hand Token v2 Lite codec"
 
 **Interfaces:**
 - TLV constants: `0x01 SKELETON_QUAT20`, `0x02 REST_OFFSETS`, `0x08 REST_MODEL_ID`.
-- Produces valid skeleton frame length 402B and normalized in-memory w-first quaternions.
+- Produces valid skeleton frame length 405B and normalized in-memory w-first quaternions.
 
 - [ ] **Step 1: Write failing TLV tests**
 
-Build a deterministic reference skeleton with exact f16 values. Test 402B length, TLV order 01/02/08, round-trip, `QUAT_WLAST` wire swap, unknown TLV skip, and rejection of missing/duplicate trio members, wrong lengths, truncated TLV, `HAS_SKELETON` mismatch, smallest-three, nonzero wrist offset, and revision 0.
+Build a deterministic reference skeleton with exact f16 values. Test 405B length, TLV order 01/02/08, round-trip, `QUAT_WLAST` wire swap, unknown TLV skip, and rejection of missing/duplicate trio members, wrong lengths, truncated TLV, `HAS_SKELETON` mismatch, smallest-three, nonzero wrist offset, and revision 0.
 
 - [ ] **Step 2: Run red test**
 
@@ -161,7 +161,7 @@ git commit -m "feat(protocol): add self-contained skeleton TLVs"
 
 - [ ] **Step 1: Write failing Python mirror tests**
 
-Mirror every C positive/negative case, including v1 golden, 82B Lite, 402B skeleton, w-last normalization, trio validation, unknown TLV skip, and exact identity-rotation FK outputs.
+Mirror every C positive/negative case, including v1 golden, 82B Lite, 405B skeleton, w-last normalization, trio validation, unknown TLV skip, and exact identity-rotation FK outputs.
 
 - [ ] **Step 2: Run red test**
 
@@ -195,7 +195,7 @@ git commit -m "feat(relay): mirror Hand Token v2 codec and FK"
 
 - [ ] **Step 1: Generate candidate bytes independently**
 
-Run C test with temporary print lines and Python `serialize_v2(reference_v2_*()).hex()`. Capture all three outputs; v1 must equal `485401...8e4c`, Lite must be 164 hex chars, skeleton 804.
+Run C test with temporary print lines and Python `serialize_v2(reference_v2_*()).hex()`. Capture all three outputs; v1 must equal `485401...8e4c`, Lite must be 164 hex chars, skeleton 810.
 
 - [ ] **Step 2: Compare before freezing**
 
