@@ -189,6 +189,7 @@ MANO / OpenXR / FreeMoCap / ROS2 / Robot   (经 DexRetargeting/AnyTeleop)
 | **OpenXR** | 26 关节去 PALM+5 TIP → 20；`x,y,z,w`→w-first；global→local 经 rest-offset | 丢 radius（非 DOF，可接受） |
 | **BVH** | 解析 HIERARCHY，Euler(ZXY)→quat，名重映射；常缺掌骨 | 名/拓扑映射有损 |
 | **mHand (Virdyn)** | **无权威 schema**（待核实）→ 暂当"BVH 兼容手套"经其 BVH 导出 ingest | 待核实 |
+| **FreeMoCap** | 多机位三角化的每手 21 个 3D 关键点 → 按 MediaPipe 拓扑重映射 → 带解剖约束的 IK 反解 canonical-20 | 有位置无旋转；掌骨扭转存在歧义【高】 |
 
 ### 5.2 Hand Token → Export（canonical-20 → 生态）
 
@@ -198,9 +199,19 @@ MANO / OpenXR / FreeMoCap / ROS2 / Robot   (经 DexRetargeting/AnyTeleop)
 | **BVH / FBX** | 由 20 关节生成 HIERARCHY + MOTION（quat→Euler） | Euler 无损；拓扑/命名映射有损 |
 | **OpenXR / SteamVR** | 合成 26（派生 PALM/指尖）或 31（加 Aux）；w-first→w-last | 指尖/palm 派生 |
 | **ROS2** | `JointState`：name/position(rad)/**effort = force[5]**；腕→`PoseStamped`(quat x,y,z,w) | quat→单 DOF/关节有损（丢离轴旋转） |
-| **FreeMoCap** | FK 派生 21 关键点 → 开放动捕位置语系（CSV/npy/Blender） | 位置视图（反向需 IK；本方向无损）【中】 |
-| **DexRetargeting/AnyTeleop** | FK 派生 21 关键点 → position/vector/DexPilot 优化 → 机器人 URDF 关节角 | retarget 依目标手 DOF；吃位置非四元数【中】 |
+| **FreeMoCap** | FK 派生 21 关键点位置 → `.npy` / `.csv` / Blender 开放动捕管线 | 位置视图本身无损；再导回旋转需 IK【高】 |
+| **DexRetargeting/AnyTeleop** | FK 得 3D 关键点位置；按优化器所需 position/vector 引用与目标 URDF joint names 对齐 → qpos | retarget 依目标手 DOF；输入是位置/向量而非四元数【高】 |
 | **21 MediaPipe** | FK 派生（§3.4） | 无损（位置视图） |
+
+### 5.3 Dataset / 训练兼容（不直接定义 wire）
+
+| 数据集 / 项目 | 对齐 canonical-20 的规则 | 约束 / 风险 |
+|---|---|---|
+| **InterHand2.6M** | MANO 轴角按父子链转 parent-relative quaternion；共享 MANO-16 关节直接映射，4 个非拇指掌骨按 rest-pose / 手型模型补齐 | 含 3D 关节与 MANO，MS COCO 标注格式，当前最易对齐；补出的 4 掌骨并非观测 DOF【高】 |
+| **COCO-WholeBody** | 每手 21 个 2D 关键点按 MediaPipe 拓扑对齐，用于 2D 检测器预训练 / 重投影监督 | 仅 2D、无深度、无 MANO、无旋转，不能直接生成 canonical-20【高】 |
+| **HumanEgo** | 仅作为 egocentric 数据飞轮与策略学习范式参照；取得 Aria MPS 手格式后才定义 adapter | 2026-06 新项目，非经典数据集；手关节数 / 精确表示与 License【待核实】，当前不得声称已完成映射【高存在 / 细节待核实】 |
+
+> **映射边界**：FreeMoCap 是可双向连接的位置语系（ingest 需 IK，export 经 FK）；DexRetargeting/AnyTeleop 是 Robot Action Layer 下游 export/retarget 目标；InterHand2.6M、COCO-WholeBody、HumanEgo 属 dataset/训练兼容，不是 v2 wire emitter。以上锚点已于 2026-07-27 经权威仓库 README / GitHub API 核实；仍未确认的字段维持【待核实】，不据此编造 adapter schema。
 
 > **关键卡位（research_5 §D §6）**：主流 VLA（OXE/RLDS）**无逐关节手、无力/触觉**（手 = 单 1-DOF 夹爪标量）。Hand Token 兼 ingest 专业手套骨架 + export MANO/ROS2 `effort`，Pro `force[5]`/`contact[5]` 填 OXE/DROID 的触觉空洞 = 真正差异化枢纽。
 

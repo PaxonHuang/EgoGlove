@@ -234,44 +234,43 @@ Manus 暴露**两套并行表示 — 值得直接借鉴**:
 
 ## E. 生态对齐锚点 (D12 新增) — 开放 Hand Motion Infrastructure / 非竞品
 
-> **核实状态**: 本节 anchors 于本会话 WebSearch/WebFetch 后端不可用 (400 config error) 下依领域知识撰写, 统一标 **【中】** (可信但未本会话再核实) 或 **【待核实】**; 出版前须对各官方源核对, 尤其 【待核实】 项。与 research_1/2 同纪律。原拟并行研究子代理因 web 后端卡死被中止, 由主循环内联补写。
->
-> **✅ 补记 (2026-07-27 晚)**: 各锚点已另经 `curl` 直取权威源 (raw README / GitHub API, 权威 URL 由用户提供) **核实**, 详见 memory `echoglove-ecosystem-anchors`。本节 【中】 项多数可升 【高】: **FreeMoCap = AGPL-3.0**、**dex-retargeting = MIT** (pinocchio/qpos, joint-name 对齐, allegro 确认)、**InterHand2.6M = MANO+3D, MS COCO format**、**COCO-WholeBody = CC-BY-NC 4.0 仅 2D**、**HumanEgo 确存但 2026-06 新项目**。下一步可做一次 【中】→【高】 tag 收敛 + 折入 v2 spec ingest/export 章节。
+> **核实状态 (2026-07-27 晚收敛)**: 本节锚点已在 WebSearch/WebFetch 后端不可用时，改用 `curl` 直取权威仓库 raw README / GitHub API 核实（权威 URL 由用户提供），因此已核实事实标 **【高】**。精确 schema、License 或生态列表未由权威 artifact 确认的部分继续标 **【待核实】**，不据此编造字段；核实底稿见 memory `echoglove-ecosystem-anchors`。
 
 **定位 (D12 冻结)**: EgoGlove **不是** Hi5/Manus/mHand 竞品; 厂商手套 = **外部数据源/适配器**。EgoGlove = 开放 **Hand Motion Infrastructure**, 以 Hand Token v2 (厂商无关通用中间表示) 为枢纽。四段管线:
 `Sensor Source(flex/IMU/vision/外部手套) → Hand Token v2 → Canonical Skeleton Layer(20 旋转关节, FK 派生 21) → MANO / OpenXR / FreeMoCap / ROS2 / Robot(经 DexRetargeting/AnyTeleop)`。
 
-### E.1 FreeMoCap (开放动捕数据管线参照) 【中】
-- **是什么**: 开源免费**无标记**动捕项目; 多台普通摄像头同步 + CV 姿态估计三角化出 3D。
-- **手部表示**: 经 MediaPipe (Holistic) → **每手 21 关键点 (位置/keypoints)**; **非旋转骨架、非原生 MANO**, 与 MediaPipe 同语系 (位置)。
-- **导出**: CSV / `.npy` / Blender (插件装配骨架) 等, 面向开放数据管线。【待核实 具体 schema】
-- **许可 / 仓库**: 【待核实 许可】(社区印象 AGPL 类, 出版前核对); `github.com/freemocap/freemocap`【中】。
-- **互操作**: **Export 目标为主** — Hand Token→FK 派生 21 关键点即落入 FreeMoCap 位置语系; 反向 (FreeMoCap→HT) 需 IK 恢复旋转 (有损, 同 MediaPipe)。代表"开放、位置语系"的参照生态, 呼应 D12 开放基础设施定位。
+### E.1 FreeMoCap (开放动捕数据管线参照) 【高】
+- **是什么**: 开源免费、硬件无关、多相机、**无标记**研究级动捕平台; Python + React/Electron GUI, 有 Zenodo DOI。【高】
+- **手部表示**: pose 后端历史使用 MediaPipe Holistic，现经 `skellytracker` 抽象并可接其他后端；MediaPipe 路径为**每手 21 个关键点位置**，不提供关节旋转或原生 MANO。【高: 项目/管线; MediaPipe 21 拓扑见 §3】
+- **导出**: 3D 关键点轨迹 `.npy` / `.csv` 与 Blender 导出。【高】精确字段 schema【待核实】。
+- **许可 / 仓库**: **AGPL-3.0**；`github.com/freemocap/freemocap`。【高】
+- **互操作**: **双向位置语系** — ingest: FreeMoCap 21×3D → 拓扑重映射 → 带解剖约束的 IK 反解 canonical-20（有位置无旋转，掌骨扭转有歧义）；export: HT canonical-20 → FK 派生 21 → FreeMoCap `.npy`/`.csv`/Blender。代表开放位置管线，呼应 D12 开放基础设施定位。【高】
 
-### E.2 DexRetargeting / AnyTeleop (人手→机器人灵巧手桥) 【中】
-- **AnyTeleop** (Qin 等, RSS 2023): 通用视觉遥操作系统; 检测人手 → retarget → 控机器人臂+灵巧手。详见 `research_3` 平台表 #5 与其优劣势分析。
-- **dex-retargeting** (`dexsuite/dex-retargeting`, MIT): 人手运动 retarget 到机器人灵巧手的 Python 库。
-  - **输入表示**: 人手**关键点位置** (task/vector 定义在关键点之间), **非四元数骨架**。【中】
-  - **retarget 类型**: position / vector / DexPilot 三型优化。【中】
-  - **目标手**: Allegro / Shadow / Leap / Ability 等 (经 URDF 配置)。【待核实 确切列表】
-- **互操作**: **Export/retarget 目标** — Hand Token 20 关节 → FK 派生 21 关键点 → dex-retargeting → 机器人 URDF 关节角。是 Robot Action Layer 下游现成的人手→机器人手桥; **EgoGlove 喂它而非与之竞争**。**错配风险**: dex-retargeting 吃**位置**, 须先 FK 出关键点 (我们能无损 FK) 再喂, 不能直接喂四元数。
+### E.2 DexRetargeting / AnyTeleop (人手→机器人灵巧手桥) 【高】
+- **AnyTeleop** (Qin 等, RSS 2023): 单 RGB 相机灵巧手遥操作框架；用户给定 fork 以 WiLoR-mini 做手检测/3D 估计，以 dex-retargeting 做 keypoint→robot joint，并支持 6-DoF 手腕；MIT。【高】详见 `research_3` 平台表 #5。
+- **dex-retargeting** (`dexsuite/dex-retargeting`, MIT): 源自 AnyTeleop 的人手→机器人灵巧手优化器库；基于 pinocchio 运动学。【高】
+  - **输入表示**: 人手 **3D 关键点位置**；vector 优化器使用关键点间向量，**不是四元数骨架**。【高】
+  - **retarget 类型**: `PositionOptimizer` / `VectorOptimizer` / `DexPilotOptimizer`。【高】
+  - **输出 / 对齐**: 每帧机器人关节位置 `qpos`；按目标 URDF **joint names** 与 ROS/SAPIEN 对齐。Allegro 已确认；其他目标手的完整清单【待核实】。【高】
+- **互操作**: **Export/retarget 目标** — HT canonical-20 → FK 得 3D 关键点 → 按 optimizer 配置选择 position/vector 引用 → dex-retargeting → 目标 URDF `qpos`。是 Robot Action Layer 下游现成桥；**EgoGlove 喂它而非与之竞争**。最大错配风险 = 它吃位置/向量而非四元数，且必须显式对齐手腕坐标系、关键点拓扑与 joint names。【高】
 
-### E.3 具身智能手部数据集 (数据飞轮兼容) 【中/待核实】
-- **InterHand2.6M** (Moon 等, ECCV 2020) 【中】: 大规模**双手交互** 2.6M 帧, Meta/FRL; **MANO 拟合标注** (3D pose+shape)。表示 = MANO + 3D 关键点 → 与 canonical-20/MANO 桥天然对齐。
-- **COCO-WholeBody** (Jin 等, ECCV 2020) 【中】: COCO 全身扩展, 133 关键点 (身17+脚6+脸68+**手42=21×2**), **2D 关键点/位置语系**。
-- **egocentric 数据集** 【中】: Ego4D (CVPR2022 大规模第一视角)、EgoBody (ECCV2022)、Ego-Exo4D、HOI4D、ARCTIC (双手-物)、DexYCB (抓取, MANO 标注) 等; 多为视频/关键点, 部分 MANO 标注。
+### E.3 具身智能手部数据集 (数据飞轮兼容)
+- **InterHand2.6M** (Moon 等, ECCV 2020) 【高】: 大规模真实采集的**双手交互** 3D 手姿数据集，含 5fps / 30fps；标注含 world/camera 3D 关节与 MANO 参数，文件采用 **MS COCO format**。映射 = MANO 轴角按父子链转 parent-relative quaternion，共享 MANO-16 关节直接对齐，canonical-20 多出的 4 个非拇指掌骨须由 rest-pose / 手型模型补齐；是当前锚点中最易对齐者。数据 License 具体名称【待核实】。
+- **COCO-WholeBody** (Jin 等, ECCV 2020) 【高】: COCO 2017 扩展，133 关键点 = 17 body + 6 feet + 68 face + **42 hands (每手21×2)**；MS COCO format，**仅 2D 关键点，无 3D / MANO**；标注 License = **CC-BY-NC 4.0，仅研究/非商业**。映射 = MediaPipe 同拓扑的 21/手，可用于 2D 检测器预训练或重投影监督，但不能直接生成 canonical-20。
+- **其他 egocentric / 手物数据集** 【中】: Ego4D、EgoBody、Ego-Exo4D、HOI4D、Assembly101、ARCTIC、DexYCB 等；其中 ARCTIC / DexYCB 使用 MANO，具体版本、标注与许可未在本轮逐项复核。
 - **HumanEgo (TX-Leo/HumanEgo, arXiv 2605.24934) 【高存在 / 细节待核实】**: 后续 `curl` 核实**确实存在**——但是 **2026-06 新发布科研项目, 非经典数据集** (UMD; "Zero-Shot Robot Learning from Minutes of Human Egocentric Videos"; Project Aria 眼镜 + Aria MPS 手追踪; HF `Leo-TX/HumanEgo` ~122 clips; flow matching→Trossen 臂)。手部关节数/表示为 **Aria MPS 专有格式【待核实】**。**引用须注明"新项目、采用度低", 勿当经典数据集**; 详见 memory `echoglove-ecosystem-anchors`。
-- **互操作**: **数据集/训练兼容目标** — MANO 标注类 (InterHand2.6M/DexYCB) 经 canonical-20⊃MANO-16 对齐; 关键点类 (COCO-WholeBody/MediaPipe) 经 FK 派生 21 对齐。支撑 D5 数据飞轮"训练数据跨源复用"。
+- **互操作**: **数据集/训练兼容目标** — MANO 标注类经 axis-angle↔parent-relative quaternion + 16↔20 拓扑桥对齐；3D 关键点类经 21↔20 IK/FK 对齐；2D 关键点类只用于投影监督；HumanEgo 在 Aria MPS 精确手格式核实前只作范式参照。支撑 D5 数据飞轮"训练数据跨源复用"，不把数据集误写成 v2 wire emitter。【高: 上述已核实锚点】
 
 ### E.4 生态角色速查
 | 锚点 | 角色 | 与 HT canonical-20 的桥 | 最大错配风险 |
 |---|---|---|---|
 | MANO/SMPL-X | export (数字人 canonical) | 20→16 折掌骨 (投影) | 非商用许可 |
 | OpenXR Hands | ingest+export (XR 运行时) | 26↔20 去/补派生 | 四元数 w-last |
-| FreeMoCap | export (开放位置语系) | FK 派生 21 | 位置↔旋转 (反向需 IK) |
-| ROS2 + DexRetargeting | export/retarget (机器人手) | FK 21 → retarget URDF | 吃位置非四元数; 关节 DOF 差异 |
-| InterHand2.6M/DexYCB | dataset (MANO 标注) | ⊃MANO-16 对齐 | 手型 β / 许可 |
-| COCO-WholeBody/egocentric | dataset (关键点) | FK 派生 21 对齐 | 仅位置无朝向 |
+| FreeMoCap | ingest+export (开放 3D 位置语系) | 21×3D ↔ IK/FK ↔ canonical-20 | 有位置无旋转；反向 IK 的掌骨扭转歧义 |
+| ROS2 + DexRetargeting | export/retarget (机器人手) | FK 3D 关键点 → position/vector optimizer → URDF qpos | 吃位置非四元数；坐标/拓扑/joint-name/DOF 差异 |
+| InterHand2.6M | dataset (MANO+3D) | MANO axis-angle ↔ parent-relative quat；16↔20 | 4 掌骨需模型补齐；License 待核实 |
+| COCO-WholeBody | dataset (2D 21/手) | MediaPipe 同拓扑；用于 2D/投影监督 | 仅 2D，无深度/旋转；CC-BY-NC 4.0 |
+| HumanEgo | dataset/范式参照 (egocentric) | 待 Aria MPS 手格式核实后定义 adapter | 新项目、采用度低；手格式/License 待核实 |
 
 ---
 
@@ -283,9 +282,9 @@ Manus 暴露**两套并行表示 — 值得直接借鉴**:
 - **DROID** 精确 action/observation tensor 规格 (README 未实时呈现; EE+gripper 描述来自既有知识, 中)。
 - **Manus SDK** 类型读自社区镜像 (`JamesBridgewater51/MANUS_Core_SDK`); enum 值为 Manus canonical, 出版前对官方 Manus Core SDK release 核对。
 - **HumanEgo** (E.3) — 已 `curl` 核实**确存** (TX-Leo, 2026-06 新项目); 剩 **待核实** = 其 Aria MPS 专有手格式 + License。
-- **FreeMoCap** (E.1) 精确导出 schema 与许可证。
-- **dex-retargeting** (E.2) 支持的目标灵巧手确切列表与输入关键点拓扑。
-- **InterHand2.6M / COCO-WholeBody / egocentric 数据集** (E.3) 标注格式与许可 (依领域知识, 未本会话核实)。
+- **FreeMoCap** (E.1) 精确导出字段 schema（AGPL-3.0 已核实）。
+- **dex-retargeting** (E.2) 除已确认 Allegro 外的完整目标手列表，以及每份配置的精确关键点索引（位置/向量输入与 joint-name 对齐已核实）。
+- **InterHand2.6M** 数据 License 具体名称（MANO+3D 与 MS COCO format 已核实）；**COCO-WholeBody** 的 2D/MS COCO format/CC-BY-NC 4.0 已核实；其他 egocentric 数据集仍按项目逐项核实。
 
 ## 来源 (本会话实时抓取)
 - OpenXR: registry.khronos.org/OpenXR/specs/1.1/man/html/XrHandJointEXT.html; KhronosGroup/OpenXR-SDK `openxr.h` — 高
@@ -309,4 +308,4 @@ Manus 暴露**两套并行表示 — 值得直接借鉴**:
 3. **v1 保持不变; v2 = capability-flagged TLV 变长帧**, version-gate 向后兼容; Lite ~82B, Pro/ingested ~166–246B。
 4. **主流 VLA (OXE/RLDS) 无逐关节手、无力/触觉** — EgoGlove `force[5]`/`contact[5]` 是稀缺资产, 印证 research_3 的"力字段无处安放→推动 schema 扩展"卡位。
 5. **MANO 是唯一被生态公认的 canonical 手模型**, 无厂商以之为互换 → Hand Token 作"ingest 各厂骨架 / export MANO"枢纽有结构性优势; 但 MANO 非商用许可须在 BP 计入。
-6. **D12 生态对齐**: EgoGlove = 开放 Hand Motion Infrastructure (非 Hi5/Manus/mHand 竞品; 厂商手套=外部源/适配器), 锚定 MANO/FreeMoCap/OpenXR/ROS2·DexRetargeting/egocentric 数据集。FreeMoCap / DexRetargeting / 关键点数据集吃**位置** → 经 FK 派生 21 对接; MANO 类数据集经 ⊃MANO-16 对齐。【中/待核实, 见 §E】
+6. **D12 生态对齐**: EgoGlove = 开放 Hand Motion Infrastructure (非 Hi5/Manus/mHand 竞品; 厂商手套=外部源/适配器), 锚定 MANO/FreeMoCap/OpenXR/ROS2·DexRetargeting/egocentric 数据集。FreeMoCap 以 3D 关键点作双向 ingest/export（IK/FK）；DexRetargeting/AnyTeleop 吃关键点位置/向量并输出 URDF qpos；InterHand2.6M 经 MANO-16 桥，COCO-WholeBody 仅作 2D/投影监督，HumanEgo 待 Aria MPS 手格式核实。【高: 已核实事实; 待核实边界见 §E】
