@@ -235,6 +235,8 @@ Manus 暴露**两套并行表示 — 值得直接借鉴**:
 ## E. 生态对齐锚点 (D12 新增) — 开放 Hand Motion Infrastructure / 非竞品
 
 > **核实状态**: 本节 anchors 于本会话 WebSearch/WebFetch 后端不可用 (400 config error) 下依领域知识撰写, 统一标 **【中】** (可信但未本会话再核实) 或 **【待核实】**; 出版前须对各官方源核对, 尤其 【待核实】 项。与 research_1/2 同纪律。原拟并行研究子代理因 web 后端卡死被中止, 由主循环内联补写。
+>
+> **✅ 补记 (2026-07-27 晚)**: 各锚点已另经 `curl` 直取权威源 (raw README / GitHub API, 权威 URL 由用户提供) **核实**, 详见 memory `echoglove-ecosystem-anchors`。本节 【中】 项多数可升 【高】: **FreeMoCap = AGPL-3.0**、**dex-retargeting = MIT** (pinocchio/qpos, joint-name 对齐, allegro 确认)、**InterHand2.6M = MANO+3D, MS COCO format**、**COCO-WholeBody = CC-BY-NC 4.0 仅 2D**、**HumanEgo 确存但 2026-06 新项目**。下一步可做一次 【中】→【高】 tag 收敛 + 折入 v2 spec ingest/export 章节。
 
 **定位 (D12 冻结)**: EgoGlove **不是** Hi5/Manus/mHand 竞品; 厂商手套 = **外部数据源/适配器**。EgoGlove = 开放 **Hand Motion Infrastructure**, 以 Hand Token v2 (厂商无关通用中间表示) 为枢纽。四段管线:
 `Sensor Source(flex/IMU/vision/外部手套) → Hand Token v2 → Canonical Skeleton Layer(20 旋转关节, FK 派生 21) → MANO / OpenXR / FreeMoCap / ROS2 / Robot(经 DexRetargeting/AnyTeleop)`。
@@ -258,7 +260,7 @@ Manus 暴露**两套并行表示 — 值得直接借鉴**:
 - **InterHand2.6M** (Moon 等, ECCV 2020) 【中】: 大规模**双手交互** 2.6M 帧, Meta/FRL; **MANO 拟合标注** (3D pose+shape)。表示 = MANO + 3D 关键点 → 与 canonical-20/MANO 桥天然对齐。
 - **COCO-WholeBody** (Jin 等, ECCV 2020) 【中】: COCO 全身扩展, 133 关键点 (身17+脚6+脸68+**手42=21×2**), **2D 关键点/位置语系**。
 - **egocentric 数据集** 【中】: Ego4D (CVPR2022 大规模第一视角)、EgoBody (ECCV2022)、Ego-Exo4D、HOI4D、ARCTIC (双手-物)、DexYCB (抓取, MANO 标注) 等; 多为视频/关键点, 部分 MANO 标注。
-- **⚠️ "HumanEgo" 【待核实】**: 用户提及 "HumanEgo" 作 egocentric-AI 数据集, **但未检出确切以此为名的 canonical 数据集** (本会话 web 不可用无法核实)。**不当作确定数据集名写入**; 极可能是"egocentric 人手数据集"类目泛称或与上列某数据集混称。引用前须人工核实确切名称。
+- **HumanEgo (TX-Leo/HumanEgo, arXiv 2605.24934) 【高存在 / 细节待核实】**: 后续 `curl` 核实**确实存在**——但是 **2026-06 新发布科研项目, 非经典数据集** (UMD; "Zero-Shot Robot Learning from Minutes of Human Egocentric Videos"; Project Aria 眼镜 + Aria MPS 手追踪; HF `Leo-TX/HumanEgo` ~122 clips; flow matching→Trossen 臂)。手部关节数/表示为 **Aria MPS 专有格式【待核实】**。**引用须注明"新项目、采用度低", 勿当经典数据集**; 详见 memory `echoglove-ecosystem-anchors`。
 - **互操作**: **数据集/训练兼容目标** — MANO 标注类 (InterHand2.6M/DexYCB) 经 canonical-20⊃MANO-16 对齐; 关键点类 (COCO-WholeBody/MediaPipe) 经 FK 派生 21 对齐。支撑 D5 数据飞轮"训练数据跨源复用"。
 
 ### E.4 生态角色速查
@@ -280,7 +282,7 @@ Manus 暴露**两套并行表示 — 值得直接借鉴**:
 - **VRM 0.x** 拇指骨串 (0.x `Proximal/Intermediate/Distal` vs 1.0 `Metacarpal/Proximal/Distal`; 1.0 已核实, 0.x 凭记忆)。
 - **DROID** 精确 action/observation tensor 规格 (README 未实时呈现; EE+gripper 描述来自既有知识, 中)。
 - **Manus SDK** 类型读自社区镜像 (`JamesBridgewater51/MANUS_Core_SDK`); enum 值为 Manus canonical, 出版前对官方 Manus Core SDK release 核对。
-- **"HumanEgo" 数据集名** (E.3) — 未检出确切以此为名的 canonical 数据集; 视为 egocentric 人手数据集泛称, 确切名称待人工核实。
+- **HumanEgo** (E.3) — 已 `curl` 核实**确存** (TX-Leo, 2026-06 新项目); 剩 **待核实** = 其 Aria MPS 专有手格式 + License。
 - **FreeMoCap** (E.1) 精确导出 schema 与许可证。
 - **dex-retargeting** (E.2) 支持的目标灵巧手确切列表与输入关键点拓扑。
 - **InterHand2.6M / COCO-WholeBody / egocentric 数据集** (E.3) 标注格式与许可 (依领域知识, 未本会话核实)。

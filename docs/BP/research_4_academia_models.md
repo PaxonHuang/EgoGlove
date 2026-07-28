@@ -163,9 +163,9 @@
 | COCO-WholeBody (Jin, ECCV2020) | COCO 全身 133 关键点 (手 42=21×2) | **2D 关键点** | FK 派生 21 对齐 | 【中】 |
 | DexYCB | 手抓取 YCB 物体 | MANO 标注 | ⊃MANO-16 对齐 | 【中】 |
 | Ego4D / EgoBody / Ego-Exo4D / HOI4D / ARCTIC | egocentric 视频/双手-物交互 | 视频/关键点, 部分 MANO | FK 21 或 MANO 对齐 | 【中】 |
-| "HumanEgo" | 用户提及的 egocentric-AI 数据集 | — | — | **【待核实】未检出确切以此为名的 canonical 数据集; 视为 egocentric 泛称, 引用前人工核实** |
+| HumanEgo (TX-Leo/HumanEgo, arXiv 2605.24934) | **2026-06 新科研项目**非经典数据集 (UMD; Project Aria 眼镜+MPS 手追踪; HF `Leo-TX/HumanEgo` ~122 clips; flow-matching→Trossen 臂) | Aria MPS **专有手格式【待核实】** | 前沿数据飞轮范式参照 (人 egocentric→机器人策略, 与我方同构) | 【高存在/细节中】**引用须注明"新项目"** |
 
-**结论**: MANO 标注类 (InterHand2.6M/DexYCB) 与 EchoGlove canonical-20 骨架**直接对齐** (⊃MANO-16); 关键点类 (COCO-WholeBody/egocentric 视频) 经 FK 派生 21 对齐。EchoGlove 可作这些数据集的**低成本传感器侧数据源**, 亦可用其做视觉侧预训练/校验 → D5 数据飞轮跨源复用。**"HumanEgo" 名称待人工核实**, 不作确定引用。
+**结论**: MANO 标注类 (InterHand2.6M/DexYCB) 与 EchoGlove canonical-20 骨架**直接对齐** (⊃MANO-16); 关键点类 (COCO-WholeBody/egocentric 视频) 经 FK 派生 21 对齐。EchoGlove 可作这些数据集的**低成本传感器侧数据源**, 亦可用其做视觉侧预训练/校验 → D5 数据飞轮跨源复用。**HumanEgo 确存** (TX-Leo/HumanEgo, 2026-06 新项目) 但手部表示为 Project Aria MPS 专有格式【待核实】, 引用须注明"新项目、采用度低"、勿当经典数据集 (详见 memory `echoglove-ecosystem-anchors`)。
 
 ## 关键发现与建议
 1. **真实可引SOTA数字**: CorrNet CVPR2023 PHOENIX-2014-T Test WER 20.5%; DSTA-SLR(COLING2024)骨架输入轻量更快; PenSLR手套式IMU+柔性词准确率94.58-96.70%; MDPI Sensors 23/6693 Attention-BiLSTM手套98.85%。可直接进BP技术对标章节。
