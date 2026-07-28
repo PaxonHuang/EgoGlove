@@ -7,6 +7,7 @@
  * 版权/署名: PaxonHuang <quenchkidney@outlook.com>
  */
 #include "../hand_token.h"
+#include "../hand_skeleton.h"
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
@@ -116,7 +117,55 @@ int main(void)
     CHECK(!hand_token_parse(bad, sizeof(bad), &got), "wrong magic rejected");
     CHECK(!hand_token_parse(frame, HAND_TOKEN_FRAME_SIZE - 1, &got), "short frame rejected");
 
-    /* 7) 金标向量: 打印 + (若已填) 断言 */
+    /* 7) canonical-20 skeleton + 25 offsets -> derived MediaPipe-21 */
+    static const int8_t expected_parent[HAND_SKELETON_JOINT_COUNT] = {
+        -1, 0, 1, 2, 0, 4, 5, 6, 0, 8, 9, 10, 0, 12, 13, 14, 0, 16, 17, 18
+    };
+    int parents_ok = 1;
+    for (int i = 0; i < HAND_SKELETON_JOINT_COUNT; ++i) {
+        parents_ok &= (hand_skeleton_parent[i] == expected_parent[i]);
+    }
+    CHECK(parents_ok, "canonical-20 parent table");
+
+    hand_skeleton_t skel;
+    memset(&skel, 0, sizeof(skel));
+    skel.model_id = HAND_REST_MODEL_CANONICAL_HUMAN;
+    skel.revision = 1;
+    for (int i = 0; i < HAND_SKELETON_JOINT_COUNT; ++i) skel.quat[i][0] = 1.0f;
+    for (int i = 1; i < HAND_SKELETON_JOINT_COUNT; ++i) skel.offsets[i][0] = 1.0f;
+    for (int i = 20; i < HAND_SKELETON_OFFSET_COUNT; ++i) skel.offsets[i][0] = 2.0f;
+
+    float landmarks[HAND_MEDIAPIPE_LANDMARK_COUNT][3];
+    CHECK(hand_skeleton_fk21(&skel, landmarks) == HAND_SKELETON_OK,
+          "identity skeleton FK succeeds");
+    static const float expected_x[HAND_MEDIAPIPE_LANDMARK_COUNT] = {
+        0, 1, 2, 3, 5,
+        2, 3, 4, 6,
+        2, 3, 4, 6,
+        2, 3, 4, 6,
+        2, 3, 4, 6
+    };
+    int mapping_ok = 1;
+    for (int i = 0; i < HAND_MEDIAPIPE_LANDMARK_COUNT; ++i) {
+        mapping_ok &= (landmarks[i][0] == expected_x[i]);
+        mapping_ok &= (landmarks[i][1] == 0.0f && landmarks[i][2] == 0.0f);
+    }
+    CHECK(mapping_ok, "MediaPipe-21 excludes extra metacarpals but preserves FK chains");
+    CHECK(landmarks[8][0] == 6.0f, "Index tip uses REST_OFFSETS[21]");
+
+    skel.offsets[0][0] = 1.0f;
+    CHECK(hand_skeleton_fk21(&skel, landmarks) == HAND_SKELETON_INVALID_WRIST_OFFSET,
+          "nonzero wrist offset rejected");
+    skel.offsets[0][0] = 0.0f;
+    skel.model_id = 99;
+    CHECK(hand_skeleton_fk21(&skel, landmarks) == HAND_SKELETON_UNSUPPORTED_MODEL,
+          "unsupported rest model rejected by FK");
+    skel.model_id = HAND_REST_MODEL_CANONICAL_HUMAN;
+    skel.revision = 0;
+    CHECK(hand_skeleton_fk21(&skel, landmarks) == HAND_SKELETON_INVALID_REVISION,
+          "rest model revision zero rejected");
+
+    /* 8) 金标向量: 打印 + (若已填) 断言 */
     print_hex("GOLDEN=", frame, n);
     size_t glen = strlen(GOLDEN_HEX);
     int golden_filled = (glen == (size_t)(HAND_TOKEN_FRAME_SIZE * 2)) &&

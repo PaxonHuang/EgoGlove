@@ -4,12 +4,12 @@
 CC      ?= gcc
 CFLAGS  ?= -std=c11 -Wall -Wextra -Werror -O2
 BIN      = test_hand_token
-SRC      = test_hand_token.c ../hand_token.c
+SRC      = test_hand_token.c ../hand_token.c ../hand_skeleton.c
 
 .PHONY: all run clean
 all: run
 
-$(BIN): $(SRC) ../hand_token.h
+$(BIN): $(SRC) ../hand_token.h ../hand_skeleton.h
 	$(CC) $(CFLAGS) -o $(BIN) $(SRC) -lm
 
 run: $(BIN)
