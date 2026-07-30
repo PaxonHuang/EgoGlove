@@ -150,6 +150,8 @@ git commit -m "feat(protocol): add self-contained skeleton TLVs"
 
 ### Task 4: Python v2 Mirror and FK
 
+**Status: required next task — not implemented in `relay/hand_token.py` as of the C fixed-point milestone.**
+
 **Files:**
 - Modify: `relay/hand_token.py`
 - Modify: `relay/test_hand_token.py`
@@ -170,7 +172,7 @@ Expected: collection/import FAIL for missing v2 symbols.
 
 - [ ] **Step 3: Implement minimal Python mirror**
 
-Keep `serialize()`/`parse()` unchanged for v1. Use `struct.pack_into/unpack_from`, explicit cursor bounds, dataclass default factories, tuple parent table, quaternion helpers, and the same deterministic TLV order as C.
+Keep `serialize()`/`parse()` unchanged for v1. Use `struct.pack_into/unpack_from`, explicit cursor bounds, dataclass default factories, tuple parent table, quaternion helpers, and the same deterministic TLV order as C. Implement the identical bounded 32-iteration `f16(normalize(...))` fixed-point selection for the v2 base wrist and all skeleton quaternions; normalize parsed finite/non-zero wire values without rejecting non-unit external input.
 
 - [ ] **Step 4: Run green test**
 
@@ -195,11 +197,11 @@ git commit -m "feat(relay): mirror Hand Token v2 codec and FK"
 
 - [ ] **Step 1: Generate candidate bytes independently**
 
-Run C test with temporary print lines and Python `serialize_v2(reference_v2_*()).hex()`. Capture all three outputs; v1 must equal `485401...8e4c`, Lite must be 164 hex chars, skeleton 810.
+After the Python mirror implements the identical quaternion fixed-point algorithm, generate candidate bytes independently for C and Python. Compare v1 plus v2 Lite and skeleton outputs before freezing constants.
 
 - [ ] **Step 2: Compare before freezing**
 
-Run a shell comparison that extracts C `GOLDEN_*=` lines and compares them to Python output. Expected: all three exact matches; otherwise stop and fix codec, never choose one side as authority.
+The comparison must include non-unit finite ingest, canonical-frame `serialize(parse(frame))` stability, base and all skeleton quaternions, and both w-first/w-last ordering. Expected: exact C/Python bytes; otherwise stop and fix the codec, never choose one side as authority.
 
 - [ ] **Step 3: Freeze nonempty constants and remove skips**
 

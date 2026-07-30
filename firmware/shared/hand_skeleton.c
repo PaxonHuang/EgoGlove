@@ -68,6 +68,13 @@ hand_skeleton_status_t hand_skeleton_fk21(
     if (!supported_model(skeleton->model_id)) return HAND_SKELETON_UNSUPPORTED_MODEL;
     if (skeleton->revision == 0) return HAND_SKELETON_INVALID_REVISION;
     if (!zero_vec3(skeleton->offsets[0])) return HAND_SKELETON_INVALID_WRIST_OFFSET;
+    for (int offset = 1; offset < HAND_SKELETON_OFFSET_COUNT; ++offset) {
+        for (int component = 0; component < 3; ++component) {
+            if (!isfinite(skeleton->offsets[offset][component])) {
+                return HAND_SKELETON_INVALID_ARGUMENT;
+            }
+        }
+    }
 
     float global_q[HAND_SKELETON_JOINT_COUNT][4];
     float global_p[HAND_SKELETON_JOINT_COUNT][3] = {{0}};

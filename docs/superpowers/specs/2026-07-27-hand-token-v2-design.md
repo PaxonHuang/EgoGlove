@@ -153,7 +153,15 @@ MANO / OpenXR / FreeMoCap / ROS2 / Robot   (经 DexRetargeting/AnyTeleop)
 | 6 | `SKEL_SMALLEST3` | 骨架四元数编码：v2.0 必须为 0（f16×4）；值 1 保留给 v2.1，v2.0 parser 必须拒绝 |
 | 7 | reserved | 置 0 |
 
-### 4.4 TLV 初始注册表
+### 4.6 Quaternion Canonicalization and Ingest Policy
+
+v2 internal quaternion state is always finite, normalized `w,x,y,z`; `QUAT_WLAST` changes only the emitted/read component order. v1 serialization and parsing are unchanged.
+
+- **Ingest/parser acceptance**: accept any finite, non-zero f16 quaternion quartet in either declared wire order. Parse converts it to internal w-first and normalizes it. A parser must not reject a valid external finite quaternion merely because it is non-unit or not already canonical.
+- **Canonical v2 serialization**: normalize the w-first input; quantize each component with the protocol f32→f16 round-to-nearest-even helper; decode to f32; normalize again; repeat f16 quantization plus normalization until the four f16 component bit patterns are unchanged. The bounded iteration limit is 32; failure to produce a finite non-zero fixed point fails serialization rather than emitting unstable bytes.
+- **Wire ordering**: after selecting the fixed-point w-first quartet, write `w,x,y,z` when `QUAT_WLAST=0`, or the same selected components as `x,y,z,w` when it is set. The rule applies to the v2 base wrist quaternion and every `SKELETON_QUAT20` quaternion.
+- **Canonical-frame invariant**: for a canonical valid v2 frame, `serialize_v2(parse_v2(frame)) == frame`. A noncanonical but valid external frame may change on its first serialization, then remains byte-stable. This invariant is intentionally distinct from permissive ingest acceptance.
+
 
 | type | 名 | value |
 |---|---|---|
@@ -242,7 +250,7 @@ MANO / OpenXR / FreeMoCap / ROS2 / Robot   (经 DexRetargeting/AnyTeleop)
 | 层 | 断言 |
 |---|---|
 | **跨语言金标** | 三个固定向量：现有 v1 79B（不得改变）、v2 Lite base-only 82B、v2 skeleton-self-contained 405B；分别以 `GOLDEN_V1_HEX` / `GOLDEN_V2_LITE_HEX` / `GOLDEN_V2_SKELETON_HEX` 同值固化在 host C 与 Python测试，**不得跳过空金标，逐字节双向一致** |
-| **round-trip** | `serialize(parse(frame)) == frame`；`parse(serialize(token)) == token`（含 f16 量化容差断言） |
+| **round-trip** | canonical valid frame: `serialize(parse(frame)) == frame`; noncanonical finite input is accepted and may canonicalize once, then repeated serialize/parse cycles are byte-stable; `parse(serialize(token)) == token` with normalized quaternion/f16 quantization semantics |
 | **version-gate** | v2 parser 正确分流 v1/v2 帧；v1-only parser 干净拒绝 v2；损坏 CRC / 错 magic / 截断 `total_len` 均被拒 |
 | **TLV 前向兼容** | 注入未知 `type` TLV → parser 按 `len` 跳过、其余字段正确 |
 | **caps / TLV 语义** | `QUAT_WLAST` 置位帧解析后归一到 w-first；重复 TLV、caps 与 TLV 不一致、非法 length、截断 TLV 均拒绝；未知 TLV 按 length 跳过 |

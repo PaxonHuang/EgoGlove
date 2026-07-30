@@ -25,6 +25,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
+#include "hand_skeleton.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -33,8 +34,27 @@ extern "C" {
 /* ---- 协议常量 ---- */
 #define HAND_TOKEN_MAGIC0      0x48u   /* 'H' */
 #define HAND_TOKEN_MAGIC1      0x54u   /* 'T'  → magic "HT", 区别于 uart_frame 的 0xAA55 */
-#define HAND_TOKEN_VERSION     0x01u
-#define HAND_TOKEN_FRAME_SIZE  79u     /* 固定帧长 (含 magic..crc) */
+#define HAND_TOKEN_VERSION     0x01u   /* v1 compatibility alias */
+#define HAND_TOKEN_VERSION_V1  0x01u
+#define HAND_TOKEN_VERSION_V2  0x02u
+#define HAND_TOKEN_FRAME_SIZE  79u     /* v1 fixed size */
+
+#define HAND_TOKEN_V2_LITE_FRAME_SIZE     82u
+#define HAND_TOKEN_V2_SKELETON_FRAME_SIZE 405u
+#define HAND_TOKEN_V2_MAX_FRAME_SIZE      1024u
+
+#define HAND_TOKEN_CAP_HAS_SKELETON   0x01u
+#define HAND_TOKEN_CAP_HAS_FORCE      0x02u
+#define HAND_TOKEN_CAP_HAS_VEL_ACC    0x04u
+#define HAND_TOKEN_CAP_GLOBAL_WRIST   0x08u
+#define HAND_TOKEN_CAP_QUAT_WLAST     0x10u
+#define HAND_TOKEN_CAP_HANDEDNESS_AXIS 0x20u
+#define HAND_TOKEN_CAP_SKEL_SMALLEST3 0x40u
+#define HAND_TOKEN_CAP_RESERVED       0x80u
+
+#define HAND_TOKEN_TLV_SKELETON_QUAT20 0x01u
+#define HAND_TOKEN_TLV_REST_OFFSETS    0x02u
+#define HAND_TOKEN_TLV_REST_MODEL_ID   0x08u
 
 /* device_id 位域: bit7 product | bit6 hand | bits5-0 serial(0..63) */
 #define HAND_TOKEN_PRODUCT_LITE 0u
@@ -76,6 +96,30 @@ enum {
     HAND_TOKEN_OFF_CRC       = 77   /* u16 LE  */
 };
 
+enum {
+    HAND_TOKEN_V2_OFF_MAGIC     = 0,
+    HAND_TOKEN_V2_OFF_VERSION   = 2,
+    HAND_TOKEN_V2_OFF_DEVICE_ID = 3,
+    HAND_TOKEN_V2_OFF_TIMESTAMP = 4,
+    HAND_TOKEN_V2_OFF_CAPS      = 8,
+    HAND_TOKEN_V2_OFF_TOTAL_LEN = 9,
+    HAND_TOKEN_V2_OFF_BASE      = 11,
+    HAND_TOKEN_V2_OFF_TLV       = 80
+};
+
+typedef enum {
+    HAND_TOKEN_WIRE_INVALID = 0,
+    HAND_TOKEN_WIRE_V1 = 1,
+    HAND_TOKEN_WIRE_V2 = 2
+} hand_token_wire_version_t;
+
+typedef struct {
+    hand_token_t base;
+    uint8_t caps;
+    bool has_skeleton;
+    hand_skeleton_t skeleton;
+} hand_token_v2_t;
+
 /* ---- device_id 编解码 ---- */
 uint8_t hand_token_make_device_id(uint8_t product, uint8_t hand, uint8_t serial);
 void    hand_token_split_device_id(uint8_t id, uint8_t *product, uint8_t *hand, uint8_t *serial);
@@ -94,6 +138,12 @@ size_t hand_token_serialize(const hand_token_t *t, uint8_t *buf, size_t buflen);
  * 成功返回 true 并填充 *out; 失败 (帧非法或 CRC 不符) 返回 false。
  */
 bool hand_token_parse(const uint8_t *buf, size_t n, hand_token_t *out);
+
+/* ---- v2 variable-length codec; v1 APIs above remain unchanged ---- */
+hand_token_wire_version_t hand_token_detect_version(const uint8_t *buf, size_t n);
+size_t hand_token_v2_serialize(const hand_token_v2_t *t, uint8_t *buf, size_t buflen);
+bool hand_token_v2_parse(const uint8_t *buf, size_t n, hand_token_v2_t *out);
+bool hand_token_v2_parse_compatible(const uint8_t *buf, size_t n, hand_token_v2_t *out);
 
 /* ---- float16 <-> float32 (供交叉实现/测试核对) ---- */
 uint16_t hand_token_f32_to_f16(float f);
