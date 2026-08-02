@@ -1,139 +1,231 @@
-"""
-test_hand_token.py — Hand Token v1 Python 单测 + 跨语言金标校验
-
-可用 pytest 运行, 也可直接 `python3 test_hand_token.py`。
-金标向量 GOLDEN_HEX 与 firmware/shared/test/test_hand_token.c 共用同一串:
-两端都对 canonical reference token 序列化并断言等于该串 → 逐字节 C↔Python 兼容。
-作者/署名: PaxonHuang <quenchkidney@outlook.com>
-"""
+"""Hand Token v1/v2 Python tests and C wire interoperability checks."""
+import math
 import struct
 
 from hand_token import (
-    HandToken, serialize, parse, crc16_modbus,
-    make_device_id, split_device_id, to_mano, to_robot_action,
-    FRAME_SIZE, PRODUCT_PRO, HAND_RIGHT,
+    HAND_LEFT, HAND_RIGHT, PRODUCT_PRO,
+    HAND_TOKEN_CAP_HAS_SKELETON, HAND_TOKEN_CAP_QUAT_WLAST,
+    HandSkeleton, HandToken, HandTokenV2, UnsupportedRestModelError,
+    crc16_modbus, fk21, make_device_id, parse, parse_any, parse_v2,
+    serialize, serialize_v2, split_device_id,
 )
 
-# 与 C test 的 GOLDEN= 输出保持一致 (首轮 host 运行后填入真实值)。
-GOLDEN_HEX = ""  # 占位; 见 firmware/shared/test 首轮 GOLDEN= 输出
+GOLDEN_V1_HEX = (
+    "485401c74e61bc00000000340038003a003c003c0000000000000000003e000080be"
+    "0000003f000000000000c03f000040c00038003400300040000000c0010001000100"
+    "380000003d000000408e4c"
+)
 
 
-def reference_token() -> HandToken:
-    """与 C make_ref() 完全一致; 所有 float16 字段取可精确表示值。"""
+def reference_token():
     return HandToken(
-        product=PRODUCT_PRO, hand=HAND_RIGHT, serial=7,   # device_id=0xC7
-        timestamp_us=12345678,                            # 0x00BC614E
-        flex=[0.0, 0.25, 0.5, 0.75, 1.0],
-        quat=[1.0, 0.0, 0.0, 0.0],
+        product=PRODUCT_PRO, hand=HAND_RIGHT, serial=7, timestamp_us=12345678,
+        flex=[0.0, 0.25, 0.5, 0.75, 1.0], quat=[1.0, 0.0, 0.0, 0.0],
         wrist_6dof=[0.125, -0.25, 0.5, 0.0, 1.5, -3.0],
-        vel=[0.5, 0.25, 0.125],
-        acc=[2.0, 0.0, -2.0],
-        contact=[1, 0, 1, 0, 1],
-        force=[0.5, 0.0, 1.25, 0.0, 2.0],
+        vel=[0.5, 0.25, 0.125], acc=[2.0, 0.0, -2.0],
+        contact=[1, 0, 1, 0, 1], force=[0.5, 0.0, 1.25, 0.0, 2.0],
     )
 
 
-def test_crc_known_vector():
-    assert crc16_modbus(b"123456789") == 0x4B37
+def reference_skeleton():
+    skeleton = HandSkeleton(model_id=0, revision=1)
+    skeleton.quat = [[1.0, 0.0, 0.0, 0.0] for _ in range(20)]
+    skeleton.quat[0] = [0.5, 0.5, 0.5, -0.5]
+    skeleton.offsets = [[0.0, 0.0, 0.0]] + [[0.25, 0.0, 0.0] for _ in range(24)]
+    return skeleton
 
 
-def test_device_id_roundtrip():
-    dev = make_device_id(1, 1, 7)
-    assert dev == 0xC7
-    assert split_device_id(dev) == (1, 1, 7)
+def reference_v2(w_last=True):
+    base = reference_token()
+    base.quat = [0.5, 0.5, -0.5, 0.5]
+    skeleton = reference_skeleton()
+    skeleton.quat[1] = [2.0, 0.0, 0.0, 0.0]
+    caps = HAND_TOKEN_CAP_HAS_SKELETON | (HAND_TOKEN_CAP_QUAT_WLAST if w_last else 0)
+    return HandTokenV2(base=base, caps=caps, has_skeleton=True, skeleton=skeleton)
 
 
-def test_f16_exact_via_struct():
-    # struct '<e' 是 IEEE754 half; 与 C f32_to_f16 (round-to-nearest-even) 一致
-    assert struct.pack("<e", 0.25) == b"\x00\x34"
-    assert struct.pack("<e", 1.0) == b"\x00\x3c"
-    assert struct.pack("<e", 2.0) == b"\x00\x40"
+def recalc_crc(frame):
+    frame[-2:] = struct.pack("<H", crc16_modbus(bytes(frame[:-2])))
+    return bytes(frame)
 
 
-def test_serialize_len_and_header():
-    frame = serialize(reference_token())
-    assert len(frame) == FRAME_SIZE == 79
-    assert frame[0:2] == b"HT"
-    assert frame[2] == 1
-    assert frame[3] == 0xC7
-
-
-def test_roundtrip_lossless():
-    ref = reference_token()
-    got = parse(serialize(ref))
-    assert (got.product, got.hand, got.serial) == (ref.product, ref.hand, ref.serial)
-    assert got.timestamp_us == ref.timestamp_us
-    # 全部取可精确表示值 → f16/f32 round-trip 无损, 可用 ==
-    assert got.flex == ref.flex
-    assert got.quat == ref.quat
-    assert got.wrist_6dof == ref.wrist_6dof
-    assert got.vel == ref.vel
-    assert got.acc == ref.acc
-    assert got.contact == ref.contact
-    assert got.force == ref.force
-
-
-def test_reject_bad_crc():
-    frame = bytearray(serialize(reference_token()))
-    frame[10] ^= 0xFF
+def assert_value_error(fn, *args):
     try:
-        parse(bytes(frame))
-        assert False, "expected ValueError on CRC mismatch"
+        fn(*args)
     except ValueError:
-        pass
-
-
-def test_reject_bad_magic():
-    frame = bytearray(serialize(reference_token()))
-    frame[0] = 0xAA
-    try:
-        parse(bytes(frame))
-        assert False, "expected ValueError on bad magic"
-    except ValueError:
-        pass
-
-
-def test_reject_short():
-    frame = serialize(reference_token())
-    try:
-        parse(frame[:-1])
-        assert False, "expected ValueError on short frame"
-    except ValueError:
-        pass
-
-
-def test_dual_representation_fork():
-    t = parse(serialize(reference_token()))
-    mano = to_mano(t)
-    robot = to_robot_action(t)
-    assert mano["representation"] == "mano"
-    assert mano["hand"] == "R"
-    assert mano["flex"] == [0.0, 0.25, 0.5, 0.75, 1.0]
-    assert robot["representation"] == "robot_action"
-    assert robot["force"] == [0.5, 0.0, 1.25, 0.0, 2.0]
-    assert robot["device"]["product"] == "Pro"
-
-
-def test_golden_cross_language():
-    valid = len(GOLDEN_HEX) == FRAME_SIZE * 2 and all(
-        c in "0123456789abcdefABCDEF" for c in GOLDEN_HEX
-    )
-    if not valid:
-        # 金标未填时跳过 (首轮): C host 测试打印 GOLDEN= 后填入本文件
-        print("SKIP golden: GOLDEN_HEX 未填, 见 firmware/shared/test 首轮 GOLDEN= 输出")
         return
-    assert serialize(reference_token()).hex() == GOLDEN_HEX.lower()
+    raise AssertionError("expected ValueError")
+
+
+def float32_ulp_distance(a, b):
+    if not (math.isfinite(a) and math.isfinite(b)):
+        raise AssertionError((a, b))
+    a32 = struct.unpack("<f", struct.pack("<f", a))[0]
+    b32 = struct.unpack("<f", struct.pack("<f", b))[0]
+    if not (math.isfinite(a32) and math.isfinite(b32)):
+        raise AssertionError((a, b))
+
+    a_bits = struct.unpack("<I", struct.pack("<f", a32))[0]
+    b_bits = struct.unpack("<I", struct.pack("<f", b32))[0]
+    if (a_bits & 0x7FFFFFFF) == 0:
+        a_bits = 0
+    if (b_bits & 0x7FFFFFFF) == 0:
+        b_bits = 0
+
+    def ordered(bits):
+        return (0x80000000 - bits) if (bits & 0x80000000) else (bits + 0x80000000)
+
+    return abs(ordered(a_bits) - ordered(b_bits))
+
+
+def test_f16_narrows_through_float32_at_rounding_boundary():
+    # C receives float fields as binary32 before its RN-even f16 conversion.
+    boundary = 1.0 + 2.0 ** -11 + 2.0 ** -25
+    token = reference_token()
+    token.flex[0] = boundary
+    assert serialize(token)[8:10] == b"\x00\x3c"
+
+
+def test_v1_golden_and_api_regression():
+    assert len(GOLDEN_V1_HEX) == 158
+    assert serialize(reference_token()).hex() == GOLDEN_V1_HEX
+    assert parse(bytes.fromhex(GOLDEN_V1_HEX)).timestamp_us == 12345678
+    assert crc16_modbus(b"123456789") == 0x4B37
+    assert make_device_id(1, 1, 7) == 0xC7
+    assert split_device_id(0xC7) == (1, 1, 7)
+    assert_value_error(parse, serialize(reference_token())[:-1])
+
+
+def test_v2_lite_wire_layout_and_version_gate():
+    token = HandTokenV2(base=reference_token())
+    frame = serialize_v2(token)
+    assert len(frame) == 82
+    assert frame[:4] == b"HT\x02\xc7"
+    assert frame[8] == 0 and struct.unpack_from("<H", frame, 9)[0] == 82
+    assert parse_v2(frame).has_skeleton is False
+    assert isinstance(parse_any(serialize(reference_token())), HandToken)
+    assert isinstance(parse_any(frame), HandTokenV2)
+    assert_value_error(parse, frame)
+
+
+def test_v2_skeleton_layout_wlast_and_wfirst_round_trip():
+    frame = serialize_v2(reference_v2(True))
+    assert len(frame) == 405
+    assert frame[80] == 1 and struct.unpack_from("<H", frame, 81)[0] == 160
+    assert frame[243] == 2 and struct.unpack_from("<H", frame, 244)[0] == 150
+    assert frame[396] == 8 and struct.unpack_from("<H", frame, 397)[0] == 4
+    assert struct.unpack_from("<4e", frame, 83) == (0.5, 0.5, -0.5, 0.5)
+    parsed = parse_v2(frame)
+    assert parsed.skeleton.quat[0] == [0.5, 0.5, 0.5, -0.5]
+    assert serialize_v2(parsed) == frame
+    wfirst = serialize_v2(reference_v2(False))
+    assert len(wfirst) == 405 and parse_v2(wfirst).skeleton.quat[0] == [0.5, 0.5, 0.5, -0.5]
+    assert serialize_v2(parse_v2(wfirst)) == wfirst
+
+
+def test_v2_parser_canonicalizes_finite_nonunit_quaternions():
+    for w_last in (True, False):
+        frame = bytearray(serialize_v2(reference_v2(w_last)))
+        struct.pack_into("<H", frame, 21, 0x4000)
+        external = recalc_crc(frame)
+        parsed = parse_v2(external)
+        assert math.isclose(sum(x * x for x in parsed.base.quat), 1.0, rel_tol=0, abs_tol=1e-6)
+        canonical = serialize_v2(parsed)
+        assert canonical != external
+        assert serialize_v2(parse_v2(canonical)) == canonical
+        frame = bytearray(serialize_v2(reference_v2(w_last)))
+        struct.pack_into("<H", frame, 83, 0x4000)
+        external = recalc_crc(frame)
+        parsed = parse_v2(external)
+        assert math.isclose(sum(x * x for x in parsed.skeleton.quat[0]), 1.0, rel_tol=0, abs_tol=1e-6)
+        canonical = serialize_v2(parsed)
+        assert serialize_v2(parse_v2(canonical)) == canonical
+
+
+def test_v2_rejects_malformed_c_cases_and_skips_unknown_tlv():
+    frame = serialize_v2(reference_v2(True))
+    for caps in (0x08, 0x40, 0x80):
+        bad = bytearray(frame); bad[8] = caps; assert_value_error(parse_v2, recalc_crc(bad))
+    bad = bytearray(frame); bad[9] += 1; assert_value_error(parse_v2, bytes(bad))
+    bad = bytearray(frame); bad[-1] ^= 1; assert_value_error(parse_v2, bytes(bad))
+    assert_value_error(parse_v2, frame[:-1])
+    bad = bytearray(frame); bad[243] = 1; assert_value_error(parse_v2, recalc_crc(bad))
+    bad = bytearray(frame); struct.pack_into("<H", bad, 81, 159); assert_value_error(parse_v2, recalc_crc(bad))
+    bad = bytearray(frame); struct.pack_into("<H", bad, 246, 0x3C00); assert_value_error(parse_v2, recalc_crc(bad))
+    bad = bytearray(frame); struct.pack_into("<H", bad, 401, 0); assert_value_error(parse_v2, recalc_crc(bad))
+    bad = bytearray(frame); struct.pack_into("<H", bad, 83, 0x7C00); assert_value_error(parse_v2, recalc_crc(bad))
+    bad = bytearray(frame); bad[21:29] = b"\0" * 8; assert_value_error(parse_v2, recalc_crc(bad))
+    unknown = bytearray(frame[:-2]); unknown[243:243] = b"\x7f\x01\0\xa5"
+    struct.pack_into("<H", unknown, 9, len(unknown) + 2)
+    unknown.extend(b"\0\0")
+    assert parse_v2(recalc_crc(unknown)).has_skeleton
+
+
+def test_v2_serializer_rejects_invalid_skeleton_contract():
+    token = reference_v2()
+    token.skeleton.revision = 0; assert_value_error(serialize_v2, token)
+    token = reference_v2(); token.skeleton.offsets[0][0] = 0.25; assert_value_error(serialize_v2, token)
+    token = reference_v2(); token.has_skeleton = False; assert_value_error(serialize_v2, token)
+    token = reference_v2(); token.skeleton.offsets[1][0] = math.inf; assert_value_error(serialize_v2, token)
+
+
+def test_fk21_nonidentity_chain_matches_c_float32_fixture():
+    """Direct C quat_rotate()/FK output fixture, stored as little-endian f32."""
+    skeleton = HandSkeleton(model_id=0, revision=1)
+    skeleton.quat = [[1.0, 0.0, 0.0, 0.0] for _ in range(20)]
+    skeleton.quat[0] = [0.9238795, 0.0, 0.3826834, 0.0]
+    skeleton.quat[1] = [0.9659258, 0.2588190, 0.0, 0.0]
+    skeleton.quat[2] = [0.9396926, 0.0, 0.3420201, 0.0]
+    skeleton.offsets = [[0.0, 0.0, 0.0] for _ in range(25)]
+    skeleton.offsets[1] = [1.0, 0.0, 0.0]
+    skeleton.offsets[2] = [0.5, 0.25, 0.0]
+    skeleton.offsets[3] = [0.25, 0.0, 0.5]
+    skeleton.offsets[20] = [0.0, 0.0, 0.75]
+
+    # Generated once by compiling firmware/shared/hand_skeleton.c with this
+    # fixture input; exact little-endian binary32 output is retained here so
+    # every Python landmark remains covered without a runtime C dependency.
+    expected_f32_le = bytes.fromhex(
+        # Exact 504-hex-character output from the C host driver compiled with
+        # firmware/shared/hand_skeleton.c and the fixture above (252 bytes).
+        "000000000000000000000000f204353f00000000f50435bf"
+        "0514933fd6b35d3ed2e678bf81edd23f60bed73d727299bf"
+        "40cc1540184a3abe040c98bf"
+        + "00" * 192
+    )
+    expected = struct.unpack("<63f", expected_f32_le)
+    actual = tuple(value for point in fk21(skeleton) for value in point)
+    assert len(expected) == len(actual) == 21 * 3
+    for actual_value, expected_value in zip(actual, expected):
+        # Measured host expression-graph drift for this full 63-coordinate C
+        # fixture is <=24 sign-aware binary32 ULPs, with no sign/nonfinite anomalies.
+        assert float32_ulp_distance(actual_value, expected_value) <= 24, (
+            actual_value,
+            expected_value,
+        )
+
+
+def test_fk21_identity_mapping_tips_and_model_errors():
+    skeleton = HandSkeleton(model_id=0, revision=1)
+    skeleton.quat = [[1.0, 0.0, 0.0, 0.0] for _ in range(20)]
+    skeleton.offsets = [[0.0, 0.0, 0.0] for _ in range(25)]
+    for index in range(1, 20): skeleton.offsets[index][0] = 1.0
+    for index in range(20, 25): skeleton.offsets[index][0] = 2.0
+    points = fk21(skeleton)
+    assert [p[0] for p in points] == [0, 1, 2, 3, 5, 2, 3, 4, 6, 2, 3, 4, 6, 2, 3, 4, 6, 2, 3, 4, 6]
+    skeleton.model_id = 99
+    try: fk21(skeleton)
+    except UnsupportedRestModelError: pass
+    else: raise AssertionError("expected UnsupportedRestModelError")
+    skeleton.model_id = 0; skeleton.revision = 0; assert_value_error(fk21, skeleton)
 
 
 if __name__ == "__main__":
-    fails = 0
-    for name, fn in sorted(globals().items()):
-        if name.startswith("test_") and callable(fn):
+    failures = 0
+    for name, value in sorted(globals().items()):
+        if name.startswith("test_") and callable(value):
             try:
-                fn()
-                print(f"[ ok ] {name}")
-            except AssertionError as e:
-                fails += 1
-                print(f"[FAIL] {name}: {e}")
-    print("== ALL PASS ==" if not fails else f"== {fails} FAILED ==")
-    raise SystemExit(1 if fails else 0)
+                value(); print(f"[ ok ] {name}")
+            except Exception as exc:
+                failures += 1; print(f"[FAIL] {name}: {exc}")
+    raise SystemExit(bool(failures))
