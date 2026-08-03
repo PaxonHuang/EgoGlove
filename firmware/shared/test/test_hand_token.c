@@ -23,8 +23,30 @@ static int g_fail = 0;
  * 可精确表示值 → 与 Python struct.pack('<e'/'<f') 逐字节一致)。
  * 由本测试首轮打印的 GOLDEN= 行填入; C 与 relay/test_hand_token.py 共用同一串。
  */
-static const char *GOLDEN_HEX =
-    "485401c74e61bc00000000340038003a003c003c0000000000000000003e000080be0000003f000000000000c03f000040c00038003400300040000000c0010001000100380000003d000000408e4c";
+static const char GOLDEN_V1_HEX[] =
+    "485401c74e61bc00000000340038003a003c003c0000000000000000003e000080be"
+    "0000003f000000000000c03f000040c00038003400300040000000c0010001000100"
+    "380000003d000000408e4c";
+
+static const char GOLDEN_V2_LITE_HEX[] =
+    "485402c74e61bc00005200000000340038003a003c003c0000000000000000003e000080be"
+    "0000003f000000000000c03f000040c00038003400300040000000c001000100010038"
+    "0000003d00000040459d";
+
+/* Signed-off skeleton fixture: reference_v2(w_last=True), using x/y/z/w wire order. */
+static const char GOLDEN_V2_SKELETON_HEX[] =
+    "485402c74e61bc00119501000000340038003a003c003800b8003800380000003e000080be000000"
+    "3f000000000000c03f000040c00038003400300040000000c0010001000100380000003d00000040"
+    "01a0000038003800b80038000000000000003c000000000000003c000000000000003c0000000000"
+    "00003c000000000000003c000000000000003c000000000000003c000000000000003c0000000000"
+    "00003c000000000000003c000000000000003c000000000000003c000000000000003c0000000000"
+    "00003c000000000000003c000000000000003c000000000000003c000000000000003c0000000000"
+    "00003c02960000000000000000340000000000340000000000340000000000340000000000340000"
+    "00000034000000000034000000000034000000000034000000000034000000000034000000000034"
+    "00000000003400000000003400000000003400000000003400000000003400000000003400000000"
+    "00340000000000340000000000340000000000340000000000340000000000340000000008040000"
+    "000100e347"
+    ;
 
 /* 构造 canonical reference token (所有 f16 字段可精确表示) */
 static void make_ref(hand_token_t *t)
@@ -50,12 +72,19 @@ static void make_ref(hand_token_t *t)
     memcpy(t->force, force, sizeof(force));
 }
 
-static void print_hex(const char *label, const uint8_t *b, size_t n)
+static int hex_decode_lower(const char *hex, uint8_t *out, size_t out_size)
 {
-    printf("%s", label);
-    for (size_t i = 0; i < n; ++i) printf("%02x", b[i]);
-    printf("\n");
+    static const char digits[] = "0123456789abcdef";
+    if (strlen(hex) != out_size * 2) return 0;
+    for (size_t i = 0; i < out_size; ++i) {
+        const char *high = strchr(digits, hex[i * 2]);
+        const char *low = strchr(digits, hex[i * 2 + 1]);
+        if (!high || !low) return 0;
+        out[i] = (uint8_t)(((high - digits) << 4) | (low - digits));
+    }
+    return 1;
 }
+
 
 static void put_u16_le(uint8_t *p, uint16_t value)
 {
@@ -537,17 +566,57 @@ int main(void)
     CHECK(hand_token_v2_serialize(&skeleton_token, skeleton_frame, sizeof(skeleton_frame)) != 0,
           "serializer accepts finite non-unit quaternion input");
 
-    /* 10) 金标向量: 打印 + (若已填) 断言 */
-    print_hex("GOLDEN=", frame, n);
-    size_t glen = strlen(GOLDEN_HEX);
-    int golden_filled = (glen == (size_t)(HAND_TOKEN_FRAME_SIZE * 2)) &&
-                        (strspn(GOLDEN_HEX, "0123456789abcdefABCDEF") == glen);
-    if (golden_filled) {
-        char hex[HAND_TOKEN_FRAME_SIZE * 2 + 1];
-        for (size_t i = 0; i < n; ++i) sprintf(&hex[i * 2], "%02x", frame[i]);
-        CHECK(strcmp(hex, GOLDEN_HEX) == 0, "frame matches GOLDEN_HEX (cross-lang contract)");
-    } else {
-        printf("  [note] GOLDEN_HEX 未填/占位, 跳过金标断言 (首轮用上面 GOLDEN= 填入)\n");
+    /* 10) Frozen cross-language goldens use the signed-off W-last skeleton fixture.
+     * W-first remains covered above as a behavior test, not a second frozen vector. */
+    make_ref(&ref);
+    n = hand_token_serialize(&ref, frame, sizeof(frame));
+    memset(&v2, 0, sizeof(v2));
+    v2.base = ref;
+    v2_n = hand_token_v2_serialize(&v2, v2_frame, sizeof(v2_frame));
+    memset(&skeleton_token, 0, sizeof(skeleton_token));
+    skeleton_token.base = ref;
+    skeleton_token.base.quat[0] = 0.5f;
+    skeleton_token.base.quat[1] = 0.5f;
+    skeleton_token.base.quat[2] = -0.5f;
+    skeleton_token.base.quat[3] = 0.5f;
+    skeleton_token.caps = HAND_TOKEN_CAP_HAS_SKELETON | HAND_TOKEN_CAP_QUAT_WLAST;
+    skeleton_token.has_skeleton = true;
+    make_ref_skeleton(&skeleton_token.skeleton);
+    skeleton_token.skeleton.quat[1][0] = 2.0f;
+    skeleton_n = hand_token_v2_serialize(&skeleton_token, skeleton_frame,
+                                          sizeof(skeleton_frame));
+
+    static const char *goldens[] = {
+        GOLDEN_V1_HEX, GOLDEN_V2_LITE_HEX, GOLDEN_V2_SKELETON_HEX
+    };
+    const size_t golden_sizes[] = {
+        HAND_TOKEN_FRAME_SIZE, HAND_TOKEN_V2_LITE_FRAME_SIZE,
+        HAND_TOKEN_V2_SKELETON_FRAME_SIZE
+    };
+    const uint8_t *golden_frames[] = {frame, v2_frame, skeleton_frame};
+    const char *golden_names[] = {"v1", "v2 Lite", "v2 skeleton W-last"};
+    for (size_t gi = 0; gi < 3; ++gi) {
+        uint8_t decoded[HAND_TOKEN_V2_SKELETON_FRAME_SIZE];
+        CHECK(hex_decode_lower(goldens[gi], decoded, golden_sizes[gi]),
+              "golden is exact lowercase hexadecimal with expected length");
+        CHECK(memcmp(decoded, golden_frames[gi], golden_sizes[gi]) == 0,
+              golden_names[gi]);
+        if (gi == 0) {
+            CHECK(hand_token_parse(decoded, golden_sizes[gi], &got) &&
+                  got.timestamp_us == ref.timestamp_us && got.product == ref.product &&
+                  got.hand == ref.hand && got.serial == ref.serial,
+                  "v1 golden reconstructs reference semantic state");
+        } else {
+            CHECK(hand_token_v2_parse(decoded, golden_sizes[gi], &v2_got) &&
+                  v2_got.base.timestamp_us == ref.timestamp_us && v2_got.base.product == ref.product &&
+                  v2_got.base.hand == ref.hand && v2_got.base.serial == ref.serial &&
+                  (gi == 1 ? (!v2_got.has_skeleton && v2_got.caps == 0) :
+                             (v2_got.has_skeleton &&
+                              v2_got.caps == (HAND_TOKEN_CAP_HAS_SKELETON | HAND_TOKEN_CAP_QUAT_WLAST) &&
+                              v2_got.skeleton.model_id == HAND_REST_MODEL_CANONICAL_HUMAN &&
+                              v2_got.skeleton.revision == 1)),
+                  "v2 golden reconstructs reference semantic state");
+        }
     }
 
     printf("== %s ==\n", g_fail ? "FAILED" : "ALL PASS");

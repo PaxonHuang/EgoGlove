@@ -98,7 +98,36 @@ def _f32(value: float) -> float:
 
 def _f16_bits(value: float) -> int:
     """C-compatible float32 -> IEEE-754 binary16 RN-even conversion."""
-    return struct.unpack("<H", struct.pack("<e", _f32(value)))[0]
+    bits = struct.unpack("<I", struct.pack("<f", value))[0]
+    sign = (bits >> 16) & 0x8000
+    exponent = (bits >> 23) & 0xFF
+    mantissa = bits & 0x7FFFFF
+
+    if exponent == 0xFF:
+        # Match hand_token_f32_to_f16(): preserve the sign and canonicalize
+        # every NaN payload to the quiet half-NaN bit 0x0200.
+        return sign | 0x7C00 | (0x0200 if mantissa else 0)
+
+    half_exponent = exponent - 127 + 15
+    if half_exponent >= 0x1F:
+        return sign | 0x7C00
+    if half_exponent <= 0:
+        if half_exponent < -10:
+            return sign
+        mantissa |= 0x800000
+        shift = 14 - half_exponent
+        half = mantissa >> shift
+        remainder = mantissa & ((1 << shift) - 1)
+        halfway = 1 << (shift - 1)
+        if remainder > halfway or (remainder == halfway and half & 1):
+            half += 1
+        return sign | half
+
+    half = sign | (half_exponent << 10) | (mantissa >> 13)
+    remainder = mantissa & 0x1FFF
+    if remainder > 0x1000 or (remainder == 0x1000 and half & 1):
+        half += 1
+    return half
 
 
 def _f16(bits: int) -> float:

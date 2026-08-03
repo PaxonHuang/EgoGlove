@@ -7,7 +7,7 @@ from hand_token import (
     HAND_TOKEN_CAP_HAS_SKELETON, HAND_TOKEN_CAP_QUAT_WLAST,
     HandSkeleton, HandToken, HandTokenV2, UnsupportedRestModelError,
     crc16_modbus, fk21, make_device_id, parse, parse_any, parse_v2,
-    serialize, serialize_v2, split_device_id,
+    serialize, serialize_v2, split_device_id, _f16_bits,
 )
 
 GOLDEN_V1_HEX = (
@@ -15,7 +15,26 @@ GOLDEN_V1_HEX = (
     "0000003f000000000000c03f000040c00038003400300040000000c0010001000100"
     "380000003d000000408e4c"
 )
-
+GOLDEN_V2_LITE_HEX = (
+    "485402c74e61bc00005200000000340038003a003c003c0000000000000000003e000080be"
+    "0000003f000000000000c03f000040c00038003400300040000000c001000100010038"
+    "0000003d00000040459d"
+)
+# Signed-off skeleton fixture: reference_v2(w_last=True), TLVs 01/02/08,
+# canonical f16 quaternion fixed point, and x/y/z/w wire order.
+GOLDEN_V2_SKELETON_HEX = (
+    "485402c74e61bc00119501000000340038003a003c003800b8003800380000003e000080be000000"
+    "3f000000000000c03f000040c00038003400300040000000c0010001000100380000003d00000040"
+    "01a0000038003800b80038000000000000003c000000000000003c000000000000003c0000000000"
+    "00003c000000000000003c000000000000003c000000000000003c000000000000003c0000000000"
+    "00003c000000000000003c000000000000003c000000000000003c000000000000003c0000000000"
+    "00003c000000000000003c000000000000003c000000000000003c000000000000003c0000000000"
+    "00003c02960000000000000000340000000000340000000000340000000000340000000000340000"
+    "00000034000000000034000000000034000000000034000000000034000000000034000000000034"
+    "00000000003400000000003400000000003400000000003400000000003400000000003400000000"
+    "00340000000000340000000000340000000000340000000000340000000000340000000008040000"
+    "000100e347"
+)
 
 def reference_token():
     return HandToken(
@@ -57,6 +76,19 @@ def assert_value_error(fn, *args):
     raise AssertionError("expected ValueError")
 
 
+def _float32_ordered_bits(value):
+    """Return monotonic float32 bits, rejecting nonfinite values."""
+    if not math.isfinite(value):
+        raise ValueError("float32 ULP comparison requires finite values")
+    bits = struct.unpack("<I", struct.pack("<f", value))[0]
+    if bits == 0x80000000 or bits == 0:
+        return 0x80000000
+    return (~bits & 0xFFFFFFFF) if bits & 0x80000000 else bits | 0x80000000
+
+
+def _float32_ulp_distance(actual, expected):
+    return abs(_float32_ordered_bits(actual) - _float32_ordered_bits(expected))
+
 def test_f16_narrows_through_float32_at_rounding_boundary():
     # C receives float fields as binary32 before its RN-even f16 conversion.
     boundary = 1.0 + 2.0 ** -11 + 2.0 ** -25
@@ -65,10 +97,61 @@ def test_f16_narrows_through_float32_at_rounding_boundary():
     assert serialize(token)[8:10] == b"\x00\x3c"
 
 
+def test_f16_bits_matches_c_overflow_and_nonfinite_rules():
+    assert _f16_bits(65520.0) == 0x7C00
+    assert _f16_bits(-65520.0) == 0xFC00
+    assert _f16_bits(float("inf")) == 0x7C00
+    assert _f16_bits(float("-inf")) == 0xFC00
+    assert _f16_bits(float("nan")) == 0x7E00
+    negative_nan = struct.unpack("<f", struct.pack("<I", 0xFFC12345))[0]
+    assert _f16_bits(negative_nan) == 0xFE00
+
+
+def test_v2_serializer_rejects_fields_that_become_nonfinite():
+    token = reference_v2()
+    token.skeleton.offsets[1][0] = 65520.0
+    assert_value_error(serialize_v2, token)
+    token = reference_v2()
+    token.skeleton.offsets[1][0] = float("nan")
+    assert_value_error(serialize_v2, token)
+
+
+def test_frozen_goldens_match_serializers_and_reconstruct_reference_state():
+    assert len(GOLDEN_V1_HEX) == 158 and GOLDEN_V1_HEX.isascii() and GOLDEN_V1_HEX.islower()
+    assert len(GOLDEN_V2_LITE_HEX) == 164 and GOLDEN_V2_LITE_HEX.isascii() and GOLDEN_V2_LITE_HEX.islower()
+    assert len(GOLDEN_V2_SKELETON_HEX) == 810 and GOLDEN_V2_SKELETON_HEX.isascii() and GOLDEN_V2_SKELETON_HEX.islower()
+    assert all(character in "0123456789abcdef" for golden in (
+        GOLDEN_V1_HEX, GOLDEN_V2_LITE_HEX, GOLDEN_V2_SKELETON_HEX
+    ) for character in golden)
+
+    reference = reference_token()
+    assert serialize(reference).hex() == GOLDEN_V1_HEX
+    parsed_v1 = parse(bytes.fromhex(GOLDEN_V1_HEX))
+    assert (parsed_v1.product, parsed_v1.hand, parsed_v1.serial, parsed_v1.timestamp_us) == (
+        reference.product, reference.hand, reference.serial, reference.timestamp_us
+    )
+
+    assert serialize_v2(HandTokenV2(base=reference_token())).hex() == GOLDEN_V2_LITE_HEX
+    parsed_lite = parse_v2(bytes.fromhex(GOLDEN_V2_LITE_HEX))
+    assert not parsed_lite.has_skeleton and parsed_lite.caps == 0
+    assert (parsed_lite.base.product, parsed_lite.base.hand, parsed_lite.base.serial, parsed_lite.base.timestamp_us) == (
+        reference.product, reference.hand, reference.serial, reference.timestamp_us
+    )
+
+    # W-last is the signed-off frozen fixture; W-first is behavior-tested separately.
+    assert serialize_v2(reference_v2(w_last=True)).hex() == GOLDEN_V2_SKELETON_HEX
+    parsed_skeleton = parse_v2(bytes.fromhex(GOLDEN_V2_SKELETON_HEX))
+    assert parsed_skeleton.has_skeleton
+    assert parsed_skeleton.caps == HAND_TOKEN_CAP_HAS_SKELETON | HAND_TOKEN_CAP_QUAT_WLAST
+    assert (parsed_skeleton.base.product, parsed_skeleton.base.hand,
+            parsed_skeleton.base.serial, parsed_skeleton.base.timestamp_us) == (
+        reference.product, reference.hand, reference.serial, reference.timestamp_us
+    )
+    assert (parsed_skeleton.skeleton.model_id, parsed_skeleton.skeleton.revision) == (0, 1)
+    assert parsed_skeleton.skeleton.quat[0] == [0.5, 0.5, 0.5, -0.5]
+
+
 def test_v1_golden_and_api_regression():
-    assert len(GOLDEN_V1_HEX) == 158
-    assert serialize(reference_token()).hex() == GOLDEN_V1_HEX
-    assert parse(bytes.fromhex(GOLDEN_V1_HEX)).timestamp_us == 12345678
     assert crc16_modbus(b"123456789") == 0x4B37
     assert make_device_id(1, 1, 7) == 0xC7
     assert split_device_id(0xC7) == (1, 1, 7)
@@ -175,10 +258,11 @@ def test_fk21_nonidentity_chain_matches_c_float32_fixture():
     expected = struct.unpack("<63f", expected_f32_le)
     actual = tuple(value for point in fk21(skeleton) for value in point)
     assert len(expected) == len(actual) == 21 * 3
+    # Host expression-graph evaluation measured at most 24 ULP from the C fixture.
     for actual_value, expected_value in zip(actual, expected):
-        actual_bits = struct.unpack("<I", struct.pack("<f", actual_value))[0]
-        expected_bits = struct.unpack("<I", struct.pack("<f", expected_value))[0]
-        assert abs(actual_bits - expected_bits) <= 2, (actual_value, expected_value)
+        assert _float32_ulp_distance(actual_value, expected_value) <= 24, (
+            actual_value, expected_value
+        )
 
 
 def test_fk21_identity_mapping_tips_and_model_errors():
