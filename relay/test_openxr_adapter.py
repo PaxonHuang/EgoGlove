@@ -1,10 +1,13 @@
 """Contract tests for the schema-neutral OpenXR input boundary."""
 import math
 
+from hand_token import HAND_TOKEN_CAP_HAS_SKELETON, HandTokenV2
+
 from openxr_adapter import (
     OpenXRHandFrame,
     OpenXRJoint,
     OpenXRJointLocation,
+    openxr_to_hand_token,
     validate_openxr_frame,
 )
 
@@ -18,6 +21,15 @@ def openxr_fixture() -> OpenXRHandFrame:
             orientation=[0.0, 0.0, 0.0, 1.0],
         )
     return OpenXRHandFrame(joints=joints)
+
+
+def test_openxr_conversion_contract_produces_skeleton_token():
+    token = openxr_to_hand_token(openxr_fixture())
+    assert isinstance(token, HandTokenV2)
+    assert token.has_skeleton
+    assert token.caps & HAND_TOKEN_CAP_HAS_SKELETON
+    assert token.skeleton.model_id == 2
+    assert token.skeleton.revision == 1
 
 
 def test_openxr_fixture_contains_all_26_joints():

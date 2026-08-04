@@ -10,13 +10,7 @@ from dataclasses import dataclass
 from enum import IntEnum
 from typing import List, Mapping, Optional
 
-from hand_token import (
-    HAND_LEFT,
-    PRODUCT_PRO,
-    HandSkeleton,
-    HandToken,
-    HandTokenV2,
-)
+from hand_token import HAND_LEFT, PRODUCT_PRO, HandTokenV2
 
 
 class OpenXRJoint(IntEnum):
