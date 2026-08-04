@@ -1,0 +1,247 @@
+{
+  "docs/BP/gen_docx.py": {
+    "mtime": 1784906973.6622264,
+    "ast_hash": "5c42dab58cd809fbdd1bc35a8d58adfa",
+    "semantic_hash": ""
+  },
+  "docs/BP/gen_figures.py": {
+    "mtime": 1784906973.6622264,
+    "ast_hash": "85e6fa2c303fff2d41e3365e3674dd88",
+    "semantic_hash": ""
+  },
+  "firmware/shared/hand_skeleton.c": {
+    "mtime": 1785745268.9296417,
+    "ast_hash": "427ab51022d830b21b16675f7dcd3c07",
+    "semantic_hash": ""
+  },
+  "firmware/shared/hand_skeleton.h": {
+    "mtime": 1785745268.9296417,
+    "ast_hash": "d6b75302c7361c87f519a2ae4a1a0bac",
+    "semantic_hash": ""
+  },
+  "firmware/shared/hand_token.c": {
+    "mtime": 1785745268.9336417,
+    "ast_hash": "0d65502455a1412fee59fe1ac1cd51aa",
+    "semantic_hash": ""
+  },
+  "firmware/shared/hand_token.h": {
+    "mtime": 1785745268.9336417,
+    "ast_hash": "b30b5860944b60b69938780f548beff1",
+    "semantic_hash": ""
+  },
+  "firmware/shared/test/test_hand_token.c": {
+    "mtime": 1785751487.9216387,
+    "ast_hash": "6126b5d7a3c6af9d539aa54355bf6b5e",
+    "semantic_hash": ""
+  },
+  "relay/hand_token.py": {
+    "mtime": 1785748238.7896492,
+    "ast_hash": "c975da4fcdfc1f925fc8ad42e16791ac",
+    "semantic_hash": ""
+  },
+  "relay/openxr_adapter.py": {
+    "mtime": 1785833381.7502875,
+    "ast_hash": "78fcaf91bcd6645d80ed017fe8716cc0",
+    "semantic_hash": ""
+  },
+  "relay/test_hand_token.py": {
+    "mtime": 1785751329.6816235,
+    "ast_hash": "c3fd8674c644eb4ef623b12cae1d3bbc",
+    "semantic_hash": ""
+  },
+  "relay/test_openxr_adapter.py": {
+    "mtime": 1785847306.8067281,
+    "ast_hash": "73685f64675d62fb6e123ebf7edec8ad",
+    "semantic_hash": ""
+  },
+  "CLAUDE.md": {
+    "mtime": 1785745268.9016416,
+    "ast_hash": "3005d56fdf0de4ca8ea81b77cee5a2f7",
+    "semantic_hash": ""
+  },
+  "README.md": {
+    "mtime": 1784902535.4866872,
+    "ast_hash": "121b0db93393c141c6ffb9754f8cc757",
+    "semantic_hash": ""
+  },
+  "docs/BP/EchoGlove_BP_V2.1.md": {
+    "mtime": 1784906857.7702084,
+    "ast_hash": "0b3cb4dfb821aed291eaf4cc0eef8869",
+    "semantic_hash": ""
+  },
+  "docs/BP/EchoGlove_BP_V2.md": {
+    "mtime": 1784907044.814231,
+    "ast_hash": "0ded73420fac122d3ae6379a248291a0",
+    "semantic_hash": ""
+  },
+  "docs/BP/README.txt": {
+    "mtime": 1784906973.6662264,
+    "ast_hash": "0eb7568bb9fb9136745bf99663c3eb05",
+    "semantic_hash": ""
+  },
+  "docs/BP/h5/index.html": {
+    "mtime": 1784907167.4862232,
+    "ast_hash": "53375a15859ac1d9c133f1d8975bc450",
+    "semantic_hash": ""
+  },
+  "docs/BP/research_1_datagloves.md": {
+    "mtime": 1785745268.9056416,
+    "ast_hash": "69c34593de2d1240b3e9da8aa18a010e",
+    "semantic_hash": ""
+  },
+  "docs/BP/research_2_vision_hand_tracking.md": {
+    "mtime": 1785745268.9056416,
+    "ast_hash": "ccbbfbcccfd258adf631989186c1b2b8",
+    "semantic_hash": ""
+  },
+  "docs/BP/research_3_robot_teleop.md": {
+    "mtime": 1785745268.9056416,
+    "ast_hash": "263defce2ac1bf07437156849f68110b",
+    "semantic_hash": ""
+  },
+  "docs/BP/research_4_academia_models.md": {
+    "mtime": 1785745268.9096417,
+    "ast_hash": "64c0d5ed224005fb63b7551b9edc998a",
+    "semantic_hash": ""
+  },
+  "docs/BP/research_5_data_formats_interop.md": {
+    "mtime": 1785745268.9096417,
+    "ast_hash": "14d2afc8c60a22b7426dd8489c28cd57",
+    "semantic_hash": ""
+  },
+  "docs/V7/01_architecture_diagrams.md": {
+    "mtime": 1784906474.078224,
+    "ast_hash": "d09cacf61dbf1358e139cf6d8ea5959e",
+    "semantic_hash": ""
+  },
+  "docs/V7/02_BOM_table.md": {
+    "mtime": 1784906500.6142247,
+    "ast_hash": "66613a696bc1eb0f512bbe9e93d725a1",
+    "semantic_hash": ""
+  },
+  "docs/V7/03_wiring_diagram.md": {
+    "mtime": 1784906518.2622252,
+    "ast_hash": "3a0eb45636abc1fbee8916b101a61312",
+    "semantic_hash": ""
+  },
+  "docs/V7/04_SOP-SPEC-PLAN_V7.md": {
+    "mtime": 1784906551.7902255,
+    "ast_hash": "3e40e11e0f178949fc02895587b3ce18",
+    "semantic_hash": ""
+  },
+  "docs/V7/05_claude_code_prompts.md": {
+    "mtime": 1784906576.7822256,
+    "ast_hash": "de22b7c48c3af30e6962953c810cafd3",
+    "semantic_hash": ""
+  },
+  "docs/V7/06_decision_summary.md": {
+    "mtime": 1784906599.618227,
+    "ast_hash": "671d5e2d85ec6e07891fe675b3e2fede",
+    "semantic_hash": ""
+  },
+  "docs/V7/07_dual_rep_layer.md": {
+    "mtime": 1785745268.9136417,
+    "ast_hash": "50ae8d9c70669d7c92ba3c3352a9fdb3",
+    "semantic_hash": ""
+  },
+  "docs/V7/ARCHITECTURE.md": {
+    "mtime": 1785847339.9467204,
+    "ast_hash": "fc7f46983e213e51253ad6b3f9217580",
+    "semantic_hash": ""
+  },
+  "docs/V7/README.md": {
+    "mtime": 1784906450.7502236,
+    "ast_hash": "594cabde2bc8debc0db002df75d2de29",
+    "semantic_hash": ""
+  },
+  "docs/V7/STRATEGY.md": {
+    "mtime": 1785745268.9176416,
+    "ast_hash": "d0b591a38e47430b961bc41550febf45",
+    "semantic_hash": ""
+  },
+  "docs/datasheet/esp-dev-kits-zh_CN-master-esp32p4.md": {
+    "mtime": 1784968241.467693,
+    "ast_hash": "b60f1e1c7c4efc7b8d508f573a43531d",
+    "semantic_hash": ""
+  },
+  "docs/datasheet/esp-dev-kits-zh_CN-master-esp32s3.md": {
+    "mtime": 1784968210.258019,
+    "ast_hash": "242538f16e0c2cdd30331d0117d2ba41",
+    "semantic_hash": ""
+  },
+  "docs/datasheet/lsm6dsv16x.md": {
+    "mtime": 1784967268.6927505,
+    "ast_hash": "384f25af014455f8a86d9e9976973ede",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/plans/2026-07-28-hand-token-v2-p0.md": {
+    "mtime": 1785745268.9216416,
+    "ast_hash": "f5db7dfbf86c981bf449f208c1938f86",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/plans/2026-07-29-claude-configuration-consolidation.md": {
+    "mtime": 1785745268.9216416,
+    "ast_hash": "1073e997f75c1a9579546e944302f73a",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/plans/2026-07-29-configuration-reduction.md": {
+    "mtime": 1785745268.9216416,
+    "ast_hash": "dbe72bc4dcc10ac2e72e49edb6208e18",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/plans/2026-08-04-openxr-ingest-adapter.md": {
+    "mtime": 1785829601.798298,
+    "ast_hash": "060123e5c24153078e1f6d6316ef88b6",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/specs/2026-07-27-hand-token-v2-design.md": {
+    "mtime": 1785745268.9256415,
+    "ast_hash": "945b440f96d698eaaf60139a40f8e1fe",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/specs/2026-07-29-claude-configuration-consolidation-design.md": {
+    "mtime": 1785745268.9296417,
+    "ast_hash": "61eab82371dbe41eee131839c7259e26",
+    "semantic_hash": ""
+  },
+  "docs/BP/figures/fig_bom_cost.png": {
+    "mtime": 1784907159.6782236,
+    "ast_hash": "2a4cb7ad8975182d6b5ce31b0666b6b8",
+    "semantic_hash": ""
+  },
+  "docs/BP/figures/fig_competitive_radar.png": {
+    "mtime": 1784907159.6862237,
+    "ast_hash": "2c33e5cc08894a8c03beabede9695794",
+    "semantic_hash": ""
+  },
+  "docs/BP/figures/fig_dual_rep_layer.png": {
+    "mtime": 1784907159.6902237,
+    "ast_hash": "59c303e563c6251112947dbdd86f52cb",
+    "semantic_hash": ""
+  },
+  "docs/BP/figures/fig_force_gap_matrix.png": {
+    "mtime": 1784907159.6942236,
+    "ast_hash": "5a81923e9ccddeda47f1a2a7b7a5009a",
+    "semantic_hash": ""
+  },
+  "docs/BP/figures/fig_funding_use.png": {
+    "mtime": 1784907159.6982236,
+    "ast_hash": "0e4248f5bbb8a9c735477ab6e3543495",
+    "semantic_hash": ""
+  },
+  "docs/BP/figures/fig_market_size.png": {
+    "mtime": 1784907159.7022235,
+    "ast_hash": "f814d052706d0a16106311e54602d66f",
+    "semantic_hash": ""
+  },
+  "docs/BP/figures/fig_price_band.png": {
+    "mtime": 1784907159.7102237,
+    "ast_hash": "ff57bf5c6943b2222d72606cf692647a",
+    "semantic_hash": ""
+  },
+  "docs/BP/figures/fig_roadmap_gantt.png": {
+    "mtime": 1784907159.7142236,
+    "ast_hash": "272770f77d785b69789c5a1161c69b98",
+    "semantic_hash": ""
+  }
+}
