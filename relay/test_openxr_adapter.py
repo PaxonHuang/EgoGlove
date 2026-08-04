@@ -7,6 +7,10 @@ from hand_token import (
     HAND_RIGHT,
     PRODUCT_PRO,
     HandTokenV2,
+    V2_SKELETON_FRAME_SIZE,
+    fk21,
+    parse_v2,
+    serialize_v2,
 )
 
 from openxr_adapter import (
@@ -75,6 +79,34 @@ def rotate_z(angle: float, vector):
 
 def add_vectors(left, right):
     return [left[axis] + right[axis] for axis in range(3)]
+
+
+def source_landmarks_in_mediapipe_order(frame):
+    joints = (
+        OpenXRJoint.WRIST,
+        OpenXRJoint.THUMB_METACARPAL,
+        OpenXRJoint.THUMB_PROXIMAL,
+        OpenXRJoint.THUMB_DISTAL,
+        OpenXRJoint.THUMB_TIP,
+        OpenXRJoint.INDEX_PROXIMAL,
+        OpenXRJoint.INDEX_INTERMEDIATE,
+        OpenXRJoint.INDEX_DISTAL,
+        OpenXRJoint.INDEX_TIP,
+        OpenXRJoint.MIDDLE_PROXIMAL,
+        OpenXRJoint.MIDDLE_INTERMEDIATE,
+        OpenXRJoint.MIDDLE_DISTAL,
+        OpenXRJoint.MIDDLE_TIP,
+        OpenXRJoint.RING_PROXIMAL,
+        OpenXRJoint.RING_INTERMEDIATE,
+        OpenXRJoint.RING_DISTAL,
+        OpenXRJoint.RING_TIP,
+        OpenXRJoint.LITTLE_PROXIMAL,
+        OpenXRJoint.LITTLE_INTERMEDIATE,
+        OpenXRJoint.LITTLE_DISTAL,
+        OpenXRJoint.LITTLE_TIP,
+    )
+    wrist = frame.joints[OpenXRJoint.WRIST].position
+    return [[position - wrist[axis] for axis, position in enumerate(frame.joints[joint].position)] for joint in joints]
 
 
 def nonidentity_openxr_fixture():
@@ -177,6 +209,42 @@ def test_openxr_derives_20_joint_and_5_tip_offsets():
         assert_close(token.skeleton.offsets[index], canonical_offsets[index])
     for tip_index, offset in enumerate(tip_offsets):
         assert_close(token.skeleton.offsets[20 + tip_index], offset)
+
+
+def test_openxr_output_serializes_as_existing_v2_skeleton_frame():
+    frame, _, _, _ = nonidentity_openxr_fixture()
+    token = openxr_to_hand_token(frame)
+
+    serialized = serialize_v2(token)
+    parsed = parse_v2(serialized)
+
+    assert len(serialized) == V2_SKELETON_FRAME_SIZE
+    assert isinstance(parsed, HandTokenV2)
+    assert parsed.has_skeleton
+    assert parsed.caps == token.caps
+    assert parsed.skeleton.model_id == token.skeleton.model_id
+    assert parsed.skeleton.revision == token.skeleton.revision
+
+
+def test_openxr_output_round_trips_without_wire_changes():
+    token = openxr_to_hand_token(openxr_fixture())
+
+    serialized = serialize_v2(token)
+    assert serialize_v2(parse_v2(serialized)) == serialized
+
+
+def test_openxr_fk21_matches_source_landmarks_before_and_after_v2_serialization():
+    frame, _, _, _ = nonidentity_openxr_fixture()
+    token = openxr_to_hand_token(frame)
+    expected = source_landmarks_in_mediapipe_order(frame)
+
+    for actual, source in zip(fk21(token.skeleton), expected):
+        assert_close(actual, source, tol=1e-5)
+
+    # V2 encodes skeleton offsets as f16, allowing up to 1e-3 m at this scale.
+    parsed = parse_v2(serialize_v2(token))
+    for actual, source in zip(fk21(parsed.skeleton), expected):
+        assert_close(actual, source, tol=1e-3)
 
 
 def test_openxr_fixture_contains_all_26_joints():

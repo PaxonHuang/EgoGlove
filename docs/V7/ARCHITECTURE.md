@@ -182,7 +182,7 @@ data/               → Open Core (open/) + Commercial (commercial/, gitignore)
 | ROS2 SDK | 🟡 | 待实现 |
 | Hand Token v1 协议 (79B 帧) | 🟡→✅ | 实现完成待首轮测试确认 (`firmware/shared` + `relay`) |
 | Hand Token v2 Skeleton Layer (20-rotation, TLV) | 🟡 | 设计冻结 (D11); spec `docs/superpowers/specs/2026-07-27-hand-token-v2-design.md`; 代码待写 |
-| 生态导出器 (MANO/OpenXR/FreeMoCap/ROS2) | 🟡 | 格式导出器待写 (D12 P1) |
+| OpenXR → canonical-20 离线 ingest adapter | ✅ | `relay/openxr_adapter.py`：schema-neutral 26-joint global-pose conversion；不含 runtime capture/streaming |
 | DexRetargeting/AnyTeleop 机器人手 retarget | 🔬 | 人手→灵巧手 retarget 桥, 待接 (D12 P1) |
 | 外部手套物理集成 (Hi5/Manus/mHand) | 🔬 | 适配器接真实设备流 (D12 P2); mHand schema 待核实 |
 | egocentric/InterHand2.6M/WholeBody 数据集兼容 | 🌌 | 具身智能数据飞轮 (D12), 长期方向 |
