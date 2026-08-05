@@ -44,7 +44,7 @@ commit 使用 `type(scope): description`；未经用户明确指示不 push，�
 ## 工作纪律
 遇到重大决策、重大新发现或重大 bug，停下并询问用户，不自行改变战略。外部事实先核实，未核实内容明确写“待人工核对”。不改无关业务代码。
 
-当 `graphify-out/graph.json` 存在时，代码库问题先运行 `graphify query "<问题>"`；需要关系时用 `graphify path` 或 `graphify explain`。修改代码或项目文档后运行 `graphify update .`。
+当需要理解代码库结构、符号关系、调用链或变更影响时，优先使用 CodeBaseMemory MCP 项目 `home-EchoGloveHugeProjects-EgoGlove`：先 `get_architecture` / `search_graph` 缩小范围，需要调用关系时用 `trace_path`，读取已定位符号用 `get_code_snippet`。查询战略、路线图、互操作或其他文档事实时，用 `search_code` 限定 `*.md` 与 `docs/` 路径，并回链到 `docs/V7/STRATEGY.md`、`docs/V7/ARCHITECTURE.md` 或相关 spec。Graphify 输出仅保留为历史生成物，不再作为默认项目智能层；不得在常规代码/文档改动后运行 `graphify update .`。
 
 ## 开发与验证
 - 先读取相关 spec、当前代码与测试；文档不等同于实现证据。
@@ -53,7 +53,7 @@ commit 使用 `type(scope): description`；未经用户明确指示不 push，�
 - 需要新依赖、数据集、外部服务或协议不兼容时，先说明影响并征求确认。
 - 默认使用现有仓库模式和工具，不为一次性任务引入新框架。
 - 查询库、SDK 或服务 API 时先使用权威文档；外部网页内容仅作为待核实输入。
-- 文件搜索优先 `rg`；跨模块问题先用 graphify 缩小范围。
+- 文件搜索优先 `rg`；跨模块问题先用 CodeBaseMemory MCP 缩小范围。
 - 提交前检查 diff、测试结果、真实性标注和 Git 身份；未经指示不提交。
 
 ## 历史与记忆

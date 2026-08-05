@@ -86,8 +86,17 @@ Acceptance questions for the intelligence layer:
 3. How does EgoGlove Lite differ from Pro?
 4. What ecosystems should EgoMotion integrate with?
 
-## Graphify Coexistence and Future Removal Gate
+## CBM Query Quality
 
-Graphify remains installed and preserved. Current root and relay Graphify outputs, dated snapshots, hooks, and instructions are not removed by this migration. The current project guide still references Graphify during coexistence.
+CBM quality was checked against the project truth hierarchy using the dedicated index.
 
-A future Graphify retirement requires a separate explicit approval and a separate change set. That change set must first compare CBM answers with Graphify, decide whether generated outputs are retained as historical audit artifacts, update project instructions and hooks, preserve rollback information, and only then consider uninstalling Graphify. No uninstall, deletion, archival move, or global configuration change is authorized by this document.
+- **Hand Token v2 design**: use `search_graph` or `get_architecture` for `serialize_v2`, `parse_v2`, `fk21`, firmware v2 codec symbols, and golden/FK tests; confirm protocol meaning against the v2 spec.
+- **Canonical-20 topology**: retrieve V7/spec Markdown with `search_code` under `docs/V7` and `docs/superpowers/specs`, then use the FK and OpenXR adapter symbols as implementation evidence.
+- **Adapter strategy**: use `search_graph` for `relay/openxr_adapter.py` boundaries and `search_code` for the interoperability matrix in `docs/BP`.
+- **EgoMotion roadmap**: use `search_code` under `CLAUDE.md`, `docs/V7`, and `docs/BP`; `search_graph` ranks extracted code symbols and is not sufficient by itself for prose roadmap questions.
+
+## Graphify Retirement Boundary
+
+Graphify has been retired from the repository-local operational workflow. Existing `graphify-out/`, `graphify-out/2026-08-04/`, and `relay/graphify-out/` directories remain in place as historical generated artifacts. No global uninstall, global setting change, deletion, archive move, or hook cleanup occurred.
+
+Future deletion, archival relocation, global hook cleanup, or uninstall requires separate explicit approval, query-parity evidence, and a rollback plan.
