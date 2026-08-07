@@ -44,6 +44,19 @@ MANO / FreeMoCap / OpenXR / ROS2 / LeRobot / foundation models
 | Episode Model | 如何把 observations、actions、事件和任务组织为 dataset episode | 不规定模型架构 |
 | Provenance Model | 数据从哪里来、经过什么变换、可信度如何 | 不把 provenance 当作运动载荷 |
 
+## 3a. 冻结的表示层级
+
+- **canonical-20** 是 Hand Token v2 解码后的 frozen rotation topology，不是 V8 新增的 schema。
+- **FK21** 是由 canonical-20、rest-offset model 和 FK implementation 派生的 positional view，不是第二个 canonical skeleton。
+- Observation 只能承载这两种表示的明确状态：`decoded`、`derived`、`estimated` 或 `fused`；不得把 estimated/derived 值标记为 measured。
+- 任何 FK21 view 都必须携带 topology/index map、rest-offset identity、Coordinate Profile 和 derivation metadata。
+
+V8 的 semantic layer 还必须保留 raw Hand Token frame/sequence reference，使上层 schema 演进不会丢失原始 transport evidence。
+
+## 3b. Projection status vocabulary
+
+跨生态映射统一使用以下状态：`exact`、`derived`、`projected`、`estimated`、`lossy`、`unsupported`。生态名称不表示 native support；MANO、FreeMoCap、OpenXR、ROS2、LeRobot 和 Behavior Foundation Models 均是 adapter、export/import projection 或 downstream consumer。
+
 ## 4. 真实性分级
 
 - **Implemented（✅）**：Hand Token v2 codec/FK、cross-language golden tests、OpenXR offline ingest 等已有实现证据；本 V8 新模型本身尚未实现。

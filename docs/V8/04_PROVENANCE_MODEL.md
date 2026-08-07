@@ -47,6 +47,8 @@ ProvenanceRecord {
 
 Provenance 应表达不可变的 lineage：`source → ingest → decode → normalize → derive → export`。每个节点有 content/schema/tool identity，每条边说明操作及参数摘要。重新处理产生新 output node，不覆盖旧记录。
 
+最小 artifact identity 应包含 `artifact_id`、content digest、media type、schema id/version、producer/version，以及适用时的 source commit。Transformation identity 应包含 input/output artifact refs、operation、implementation version、configuration digest 和 deterministic/non-deterministic 标记。未定义这些 identity 时，只能宣称 lineage metadata，不能宣称可复现 artifact identity。
+
 对于 Hand Token，应记录 frame/sequence 的 hash、codec version 和 validation result；但不得把 source vendor、license 或实验注释强行加入 frozen wire contract。
 
 ## 4. Trust 与质量

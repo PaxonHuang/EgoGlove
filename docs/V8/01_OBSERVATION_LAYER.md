@@ -10,6 +10,8 @@ Hand Token v2 frame → decoded canonical state → Observation
 
 Observation 可以包含 canonical motion、派生 landmark、腕部状态、velocity/acceleration、contact/force、quality、Coordinate Profile 引用和 Provenance 引用。不存在的数据必须由 mask/availability 明确表示，不能用零值伪装。
 
+每个 observation 还必须保留 `raw_transport_ref`（Hand Token frame/sequence identity）。字段应区分 `decoded`、`measured`、`derived`、`estimated` 和 `fused`；FK21 只能在提供 derivation metadata 后作为 `derived` 值出现。
+
 ## 2. 建议逻辑结构
 
 ```text

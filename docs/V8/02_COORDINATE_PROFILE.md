@@ -21,7 +21,15 @@ Coordinate Profile 是所有空间语义的显式 normalization boundary。它�
 
 禁止根据字段名或数值范围隐式猜测 profile。缺失 profile 时，observation 只能标记为 unresolved，不能宣称已归一化。
 
-## 3. 转换边界
+## 3. Canonical semantic profile
+
+V8 使用一个独立于 wire protocol 的 canonical semantic profile 来解释 decoded Hand Token：canonical-20 继续是 frozen parent-relative rotation topology，canonical profile 只声明其 frame/convention metadata。至少应固定 `canonical_hand_frame`、`canonical_wrist_frame`、rest-pose/reference、length unit、handedness、quaternion order 和 landmark order。
+
+该 profile 不新增 Hand Token 字段、不改变 firmware，也不允许 source-specific profile 反向定义 canonical-20。
+
+## 4. Frame taxonomy 与转换边界
+
+Profile 应能区分 `source_frame`、`canonical_hand_frame`、`session_frame`、`world_frame`、`camera_optical_frame`、`robot_base_frame` 和 `robot_tool_frame`。每条 transform 必须声明 parent/child、`static | dynamic | estimated`、validity interval、calibration reference 和 uncertainty。
 
 ```text
 source profile
@@ -30,6 +38,7 @@ canonical semantic profile
     ↓ optional projection
 MANO / FreeMoCap / OpenXR / ROS2 / LeRobot profile
 ```
+
 
 Hand Token v2 已冻结的 canonical 约定继续作为 transport decode 的既定语义。V8 只要求 decoded observation 携带 profile reference，并让上下游转换可审计、可复现。
 

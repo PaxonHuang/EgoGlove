@@ -20,6 +20,8 @@ Dataset
 
 每个 episode 应有稳定 ID、采集时间范围、source/session、采样率或 irregular-time 声明、参与的手/设备、任务上下文和终止原因。每个 step 必须可区分 observation time、action time 和 event time，不能假设三者天然同步。
 
+建议的最小时间语义为：observation 使用 `observed_at`（可选 `valid_interval`），action 使用 `issued_at` 与 `applied_interval`，event 使用 `occurred_at`。每个时间值必须关联 source clock 或 synchronized clock；step index 只是 projection 后的索引，不是时间本身。resampling、interpolation、latency 和 clock offset 必须进入 transformation/provenance metadata。
+
 ## 3. Step 语义
 
 - `observation`：人在某一时刻的观测状态；
@@ -28,7 +30,7 @@ Dataset
 - `mask`：字段缺失、不可用、被质量门控或 padding 的原因；
 - `terminal` / `truncated`：任务自然结束与采集截断必须区分。
 
-Episode 可以导出为 RLDS-like 或 LeRobot-compatible dataset projection，但这些 projection 不成为 V8 semantic source of truth。
+Episode 可以导出为 RLDS-like 或 LeRobot-compatible dataset projection，但这些 projection 不成为 V8 semantic source of truth。Projection 必须提供 feature manifest（name、dtype、shape、unit、Coordinate Profile、time semantics、mask、normalization、Provenance），并保留原始 timestamp。RLDS 的 `is_first`、`is_last`、`is_terminal`、`reward` 和 `discount` 只有在其语义真实存在时才输出；human-only motion episode 不得伪造 robot action、reward 或 discount。
 
 ## 4. 兼容性
 
