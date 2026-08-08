@@ -92,4 +92,6 @@ V8 采用 **semantic envelope above transport**：transport 保持稳定，seman
 - [Coordinate Profile](02_COORDINATE_PROFILE.md)
 - [Episode Model](03_EPISODE_MODEL.md)
 - [Provenance Model](04_PROVENANCE_MODEL.md)
+- [Architecture Freeze Review](05_ARCHITECTURE_FREEZE_REVIEW.md)
+- [Offline Semantic Fixtures (Phase 1)](06_SEMANTIC_FIXTURES.md)
 - [Migration Proposal](../migrations/2026-08-human-motion-infrastructure-proposal.md)
