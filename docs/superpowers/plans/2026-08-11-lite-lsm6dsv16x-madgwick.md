@@ -490,6 +490,20 @@ git commit -m "feat(lite): LSM6DSV16X I2C driver (120Hz, ±4g/±2000dps) + host 
 **Interfaces:**
 - Produces: `typedef struct { float beta; float q0,q1,q2,q3; } madgwick_t;`；`void madgwick_init(madgwick_t*, float beta)`；`void madgwick_update(madgwick_t*, float gx,gy,gz /*rad/s*/, float ax,ay,az /*g*/, float dt /*s*/)`；`void madgwick_get_quat(const madgwick_t*, float out[4])`；`void madgwick_set_quat(madgwick_t*, const float q[4])`（Task 4 管理器与 Task 5 复用）。
 
+**决策记录 (2026-08-11) — Madgwick 梯度符号修正（本计划的 `s = Jᵀf` 原实现非标准）**
+
+用户已批准「修正后执行」：原计划 `madgwick.c` 的梯度下降有三处符号错误，导致姿态向错误方向收敛（重力 −y 时收敛到 roll +90° 而非物理真值 −90°）。已逐项对照真 Jacobian（J = ∂ĝ/∂q）与部署参考实现（arduino-libraries/MadgwickAHRS `updateIMU`）核实并修正：
+
+1. **f1 残差项**：`f1 = 2.0f*(q2*q3 - q0*q1) - ay` → `f1 = 2.0f*(q0*q1 + q2*q3) - ay`（ĝ_y 半向量形式符号错误）。
+2. **s0 的 f1 系数**：`f1*(-2.0f*q1)` → `f1*( 2.0f*q1)`（真 Jacobian ∂f1/∂q0 = **+2q1**）。
+3. **s1 的 f1 系数**：`f1*(-2.0f*q0)` → `f1*( 2.0f*q0)`（真 Jacobian ∂f1/∂q1 = **+2q0**）。
+
+物理真值锚点：ĝ = R(q)ᵀ·(0,0,1) = (2(xz−wy), 2(yz+wx), 1−2(x²+y²)) ⇒ **â=(0,−1,0) ⟺ roll −90° ⟺ q=(cos45, −sin45, 0, 0)**。修正后 `test_converge_gravity_neg_y` 断言相应改为 `q[1] → −0.7071`。
+
+**`test_converge_flip_180` 保持原断言**（起始 +90°、重力 −y 时 10s 后仍在 +90°）：这是离散梯度下降的**保号性质**——该状态 s ∥ q，故 `normalize(q − β·dt·ŝ) = q`（s ∥ q 时不动点）。加速度计单独无法分辨 ±180°（无磁力计），属预期物理限制，非缺陷。
+
+**数值验证**（`gcc -std=c11 -O2 -Werror` host 模拟，dt=0.01s，β=0.1）：修正后全 5 测试场景通过——静止+z 60s 无漂移；扰动+z 60s 收敛 identity（q1,q2<1e-2，q3 有界）；重力 −y 20s 收敛 roll −90.09°；翻转起始保号 +90°；扰动 −y 收敛 −90°。与参考实现方向一致。Task 3 Step 5 期望摘要中的「重力-y 收敛」指修正后的 −90° 方向。
+
 - [ ] **Step 1: 写失败的测试 `test_madgwick.c`**
 
 ```c
@@ -544,21 +558,28 @@ static void test_rotate_90_deg_x(void) {
 }
 
 static void test_converge_gravity_neg_y(void) {
-    /* gravity along -y (device rolled +90deg about x) converges to q=+90deg x */
+    /* gravity along -y (device rolled -90deg about x) converges to q = -90deg
+       about x. 2026-08-11: previous assertion (q[1] -> +0.7071) codified a
+       gradient sign bug (see decision record); physical truth is
+       q = (cos45, -sin45, 0, 0). */
     madgwick_t m;
     madgwick_init(&m, 0.1f);
     for (int i = 0; i < 2000; i++) {           /* 20 s */
         madgwick_update(&m, 0,0,0, 0,-1,0, 0.01f);
     }
     float q[4]; madgwick_get_quat(&m, q);
-    /* q should be ~(cos45, sin45, 0, 0) = rotation +90deg about x */
+    /* q should be ~(cos45, -sin45, 0, 0) = rotation -90deg about x */
     assert(fabsf(q[0] - 0.7071f) < 0.05f);
-    assert(fabsf(q[1] - 0.7071f) < 0.05f);
+    assert(fabsf(q[1] + 0.7071f) < 0.05f);
     assert(fabsf(q[2]) < 0.05f && fabsf(q[3]) < 0.05f);
 }
 
 static void test_converge_flip_180_no_ambiguity_guard(void) {
-    /* from a known rotated start, gravity +z stays consistent */
+    /* Sign preservation: at roll +90 with gravity -y, the correction step s is
+       collinear with q (s || q), so discrete normalize(q - eps*s_hat) is a fixed
+       point. Accel alone cannot resolve the +/-180 sign without gyro history
+       (no magnetometer); the filter stays at +90 instead of jumping to -90.
+       This is expected physics, not a bug. */
     madgwick_t m;
     madgwick_init(&m, 0.1f);
     float q0[4] = {0.7071f, 0.7071f, 0.0f, 0.0f};  /* already 90deg about x */
@@ -672,12 +693,14 @@ void madgwick_update(madgwick_t *m,
 
         /* Estimated gravity in body frame (half-vector form) */
         f0 = 2.0f*(q1*q3 - q0*q2) - ax;
-        f1 = 2.0f*(q2*q3 - q0*q1) - ay;
+        f1 = 2.0f*(q0*q1 + q2*q3) - ay;
         f2 = (q0*q0 - q1*q1 - q2*q2 + q3*q3) - az;
 
-        /* s = J^T f, J = dghat/dq */
-        s0 = f0*(-2.0f*q2) + f1*(-2.0f*q1) + f2*( 2.0f*q0);
-        s1 = f0*( 2.0f*q3) + f1*(-2.0f*q0) + f2*(-2.0f*q1);
+        /* s = J^T f, J = dghat/dq  (2026-08-11: f1 Jacobian coeffs corrected
+           from -2q1/-2q0 to +2q1/+2q0 per true J = dghat/dq; see decision
+           record above) */
+        s0 = f0*(-2.0f*q2) + f1*( 2.0f*q1) + f2*( 2.0f*q0);
+        s1 = f0*( 2.0f*q3) + f1*( 2.0f*q0) + f2*(-2.0f*q1);
         s2 = f0*(-2.0f*q0) + f1*( 2.0f*q3) + f2*(-2.0f*q2);
         s3 = f0*( 2.0f*q1) + f1*( 2.0f*q2) + f2*( 2.0f*q3);
         /* Guard |s|==0 (no accel residual): rsqrt(0)=inf would turn 0*inf into NaN */
@@ -708,7 +731,7 @@ void madgwick_update(madgwick_t *m,
 - [ ] **Step 5: 运行测试确认通过**
 
 Run: `cd firmware/lite/test && make test_madgwick`
-Expected: `MADGWICK: all tests PASS`（5 项：静止无漂移、扰动收敛/偏航有界、纯积分 90° 旋转、重力-y 收敛、180° 保号）。
+Expected: `MADGWICK: all tests PASS`（5 项：静止无漂移、扰动收敛/偏航有界、纯积分 90° 旋转、重力-y 收敛至 −90°、180° 保号不动）。
 
 - [ ] **Step 6: 提交**
 
