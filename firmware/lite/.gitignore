@@ -1,0 +1,6 @@
+.pio/
+.pioenvs/
+.piolibdeps/
+test/test_lsm6dsv16x
+test/test_madgwick
+test/test_lite_sensor_manager
