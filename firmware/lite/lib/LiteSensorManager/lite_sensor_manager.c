@@ -62,7 +62,9 @@ bool lite_sm_update(lite_sensor_manager_t *m, uint32_t timestamp_us,
 void lite_sm_euler_deg(const float q[4], float out_deg[3]) {
     float w = q[0], x = q[1], y = q[2], z = q[3];
     float roll  = atan2f(2.0f*(w*x + y*z), 1.0f - 2.0f*(x*x + y*y));
-    float pitch = asinf(2.0f*(w*y - z*x));
+    float s = 2.0f*(w*y - z*x);                    /* clamp: slightly-off-unit quat → asinf NaN */
+    if (s > 1.0f) s = 1.0f; else if (s < -1.0f) s = -1.0f;
+    float pitch = asinf(s);
     float yaw   = atan2f(2.0f*(w*z + x*y), 1.0f - 2.0f*(y*y + z*z));
     out_deg[0] = roll  * 180.0f / 3.14159265358979f;
     out_deg[1] = pitch * 180.0f / 3.14159265358979f;

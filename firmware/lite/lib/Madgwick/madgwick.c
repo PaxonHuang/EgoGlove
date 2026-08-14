@@ -54,6 +54,9 @@ void madgwick_update(madgwick_t *m,
         /* s = J^T f, J = dghat/dq  (2026-08-11: f1 Jacobian coeffs corrected
            from -2q1/-2q0 to +2q1/+2q0 per true J = dghat/dq; see decision
            record above) */
+        /* f2 Jacobian is the FULL ∂f2/∂q = (2q0,-2q1,-2q2,2q3), not the
+           published constraint-substituted 2(0.5-q1²-q2²); same residuals and
+           fixed points, slightly different descent path — do NOT "correct" it. */
         s0 = f0*(-2.0f*q2) + f1*( 2.0f*q1) + f2*( 2.0f*q0);
         s1 = f0*( 2.0f*q3) + f1*( 2.0f*q0) + f2*(-2.0f*q1);
         s2 = f0*(-2.0f*q0) + f1*( 2.0f*q3) + f2*(-2.0f*q2);
@@ -77,7 +80,12 @@ void madgwick_update(madgwick_t *m,
     q2 += qDot3 * dt;
     q3 += qDot4 * dt;
 
-    /* Normalise */
-    rn = rsqrt_(q0*q0 + q1*q1 + q2*q2 + q3*q3);
-    m->q0 = q0*rn; m->q1 = q1*rn; m->q2 = q2*rn; m->q3 = q3*rn;
+    /* Normalise — guarded like the s-normalize above: a degenerate zero/NaN
+       norm must never reach rsqrt(0)→NaN; leave q as-is instead. Valid inputs
+       (identity start, unit-norm integration) keep the exact original path. */
+    float n2 = q0*q0 + q1*q1 + q2*q2 + q3*q3;
+    if (n2 > 1e-12f) {
+        rn = rsqrt_(n2);
+        m->q0 = q0*rn; m->q1 = q1*rn; m->q2 = q2*rn; m->q3 = q3*rn;
+    }
 }

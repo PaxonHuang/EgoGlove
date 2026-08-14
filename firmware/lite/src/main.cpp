@@ -43,6 +43,7 @@ static void taskSensorRead(void *arg) {
     for (;;) {
         hand_token_t tok;
         if (lite_sm_update(&g_sm, micros(), &tok)) {
+            // TODO(M3): cross-core g_last snapshot is a formal data race (10Hz read vs 120Hz write); portENTER_CRITICAL copy or seqlock when M3 replaces this path.
             memcpy((void *)&g_last, &tok, sizeof(tok));   /* volatile struct → memcpy */
             g_has_sample = true;
         }
@@ -57,6 +58,7 @@ static void taskTelemetry(void *arg) {
     for (;;) {
         if (g_has_sample) {
             hand_token_t t;
+            // TODO(M3): cross-core g_last snapshot is a formal data race (10Hz read vs 120Hz write); portENTER_CRITICAL copy or seqlock when M3 replaces this path.
             memcpy(&t, (const void *)&g_last, sizeof(t)); /* 快照 (volatile → memcpy) */
             float e[3];
             lite_sm_euler_deg(t.quat, e);

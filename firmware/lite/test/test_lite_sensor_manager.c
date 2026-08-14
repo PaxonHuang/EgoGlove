@@ -119,12 +119,43 @@ static void test_euler_identity(void) {
     assert(fabsf(d[0] - 90.0f) < 0.5f);
 }
 
+static void test_gyro_deg_to_rad_integration(void) {
+    /* Regression lock for the deg/s→rad/s fix (commit 2e9c585): drives NON-ZERO
+       gyro through lite_sm_update. gyro x = 1000 LSB @ 70 mdps/LSB = 70 dps;
+       a_raw = 0 → Madgwick's a≠0 guard DISABLES accel feedback → pure gyro
+       integration. 100 × 10 ms = 1.0 s at 70 dps → 70° about x → q =
+       (cos 35°, sin 35°, 0, 0) = (0.8192, 0.5736, 0, 0). Without the deg→rad
+       fix the gyro is 57.3× too fast (~4000° wrap) and these asserts fail. */
+    stub_t s; memset(&s, 0, sizeof(s));
+    s.who_am_i = LSM6DSV16X_WHO_AM_I_VALUE;
+    s.status   = LSM6DSV16X_STAT_XLDA | LSM6DSV16X_STAT_GDA;
+    s.g_raw[0] = 0xE8; s.g_raw[1] = 0x03;      /* +1000 LSB gyro x */
+    /* a_raw stays all-zeros (memset above) — accel feedback disabled */
+
+    lite_sensor_manager_t m;
+    imu_transport_t t = { stub_write, stub_read };
+    assert(lite_sm_init(&m, HAND_TOKEN_PRODUCT_LITE, HAND_TOKEN_HAND_RIGHT, 2,
+                        0.5f, flex_half, NULL, t, &s));
+
+    hand_token_t tok;
+    uint32_t t_us = 100000;                     /* seed: dt=0 (m->last_us==0) */
+    for (int i = 0; i < 100; i++) {
+        t_us += 10000;                          /* +10 ms = dt 0.01 s */
+        assert(lite_sm_update(&m, t_us, &tok));
+    }
+    assert(fabsf(tok.quat[0] - 0.8192f) < 0.05f);
+    assert(fabsf(tok.quat[1] - 0.5736f) < 0.05f);
+    assert(fabsf(tok.quat[2]) < 0.05f);
+    assert(fabsf(tok.quat[3]) < 0.05f);
+}
+
 int main(void) {
     test_init_sets_fields();
     test_update_fills_token();
     test_flex_failure_leaves_zero();
     test_no_new_data_returns_false();
     test_euler_identity();
+    test_gyro_deg_to_rad_integration();
     printf("LITE_SENSOR_MANAGER: all tests PASS\n");
     return 0;
 }
