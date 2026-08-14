@@ -754,6 +754,10 @@ git commit -m "feat(lite): Madgwick 6-axis AHRS filter + host tests"
 - Consumes: `imu_transport_t`（Task 2）、`madgwick_t`（Task 3）、`hand_token_t`（`firmware/shared/hand_token.h`）。
 - Produces: `typedef bool (*lite_flex_read_fn)(float out[5], void *ctx);`；`bool lite_sm_init(lite_sensor_manager_t*, uint8_t product, uint8_t hand, uint8_t serial, float beta, lite_flex_read_fn, void *flex_ctx, imu_transport_t, void *imu_ctx)`；`bool lite_sm_update(lite_sensor_manager_t*, uint32_t timestamp_us, hand_token_t *out)`；`void lite_sm_euler_deg(const float quat[4], float out_deg[3])`（Task 5 main.cpp 复用）。
 
+**决策记录 (2026-08-11) — 陀螺单位转换（deg/s → rad/s）**
+
+用户已批准「修正后执行」：Task 4 原计划 `lite_sm_update` 将驱动陀螺直传 `madgwick_update`，但**驱动 `lsm6dsv16x_read` 输出 deg/s**（`raw × 70 mdps/LSB × 0.001`），而 **Madgwick 契约要求 rad/s**（`qDot = 0.5·q⊗ω`）。真实 IMU 下陀螺积分将 **57.3× 过快**（host 测试用零陀螺无法捕获；板上翻转 90° 响应验证必然失败）。修复：在 `lite_sm_update` 融合边界做 deg→rad 转换（×0.0174532925199433），保持驱动 dps 契约（测试断言 70.0 dps）与 Madgwick rad/s 契约均不变。
+
 - [ ] **Step 1: 写失败的测试 `test_lite_sensor_manager.c`**
 
 ```c
@@ -993,7 +997,12 @@ bool lite_sm_update(lite_sensor_manager_t *m, uint32_t timestamp_us,
     }
     m->last_us = timestamp_us;
 
-    madgwick_update(&m->filter, gyro[0], gyro[1], gyro[2],
+    /* gyro: deg/s (driver contract) → rad/s (Madgwick contract). 2026-08-11
+       fix — without this, real-IMU gyro integration is 57.3x too fast (host
+       tests use zero gyro, so cannot catch it). See Task 4 decision record. */
+    const float deg2rad = 0.0174532925199433f;
+    madgwick_update(&m->filter,
+                    gyro[0]*deg2rad, gyro[1]*deg2rad, gyro[2]*deg2rad,
                     acc[0], acc[1], acc[2], dt);
 
     fill_identity(out);
