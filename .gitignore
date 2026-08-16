@@ -47,7 +47,9 @@ env/
 secrets/
 
 # ---- Claude / agent artifacts (session-local) ----
-.claude/
+.claude/*
+!.claude/skills/
+!.claude/skills/**
 .remember/
 .playwright-mcp/
 .superpowers/

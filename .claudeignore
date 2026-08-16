@@ -1,0 +1,27 @@
+# ==== Claude Code 文件树 / 搜索 / 索引排除 ====
+# 规则：第三方源码参考只做定点 Read（核对 API 时），永不进入检索与推理基线。
+
+# 第三方源码参考仓（兄弟目录 third-party-deepresearch/）——即使被挂进工作区也不检索
+third-party*/
+
+# 构建产物 / 大数据（.gitignore 已覆盖大部分，此处防 Claude 文件树与 Glob 扫描）
+build/
+dist/
+.pio/
+node_modules/
+data/raw/
+data/private/
+models/**/*.onnx
+models/**/*.bin
+models/**/*.pt
+models/**/*.tflite
+*.zip
+*.7z
+
+# 本地个人配置（平台相关，勿检索 / 勿提交）
+.claude/settings.local.json
+
+# 会话级产物
+.remember/
+.playwright-mcp/
+.superpowers/
