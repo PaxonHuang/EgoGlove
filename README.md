@@ -25,17 +25,30 @@ Sensor Stream → Hand Token → ┌─ MANO Layer      (Unity/Unreal/XR/数字�
 ```
 firmware/{lite,pro,shared}/   base_station/   relay/
 models/{mano,robot,slr,shared}/   web/   sdk/   data/
-docs/{V7,BP}/   templates/   scripts/
+docs/{V7,V8}/   templates/   scripts/
 ```
 
-详见 `CLAUDE.md`。
+详见 `CLAUDE.md`。伞仓（项目定位/跨仓真相源/ADR）见 [PaxonHuang/EgoMotion](https://github.com/PaxonHuang/EgoMotion)。
 
 ## 文档
 
-- **战略**: `docs/V7/STRATEGY.md` (D1–D9 冻结决策)
-- **架构**: `docs/V7/ARCHITECTURE.md` (双表示层 + 系统架构)
-- **BP**: `docs/BP/EchoGlove_BP_V2.1.md` (产业级商业计划书)
-- **V7 设计文档**: `docs/V7/` (8 文件 + STRATEGY + ARCHITECTURE)
+- **战略**: `docs/V7/STRATEGY.md` (D1–D12 冻结决策)
+- **架构**: `docs/V7/ARCHITECTURE.md` (双表示层 + 系统架构 + 真实性总表)
+- **V8 语义层**: `docs/V8/` (Human Motion Infrastructure proposal，**未实现**)
+- **ADR**: `docs/superpowers/specs/adr/` (ADR-001 仓库拓扑 / ADR-002 传感器总线)
+- **BP**: 见 `.claude/worktrees/investor-customer-bp/docs/business/` 与 `docs/BP/`（HISTORICAL，主仓已不跟踪）
+
+## Demo1 当前进度（2026-08-19）
+
+ESP32-S3 + 11×LSM6DSV16X + 3×HKVT-M3A → 统一 acquisition timeline → USB。
+
+| 阶段 | 状态 |
+|---|---|
+| Phase 1A — HKVT-M3A minimal driver | ✅ 软件层完成（commit `f29f398`，16 host 单测 PASS；opcode 0x03/0x1A 待 HW 验证） |
+| Phase 1B — 单颗 LSM6DSV16X (native ESP-IDF, `firmware/pro/`) | 🏗️ 未开始 |
+| Phase 1C/1D — 11 IMU + 3 HKVT acquisition | 🏗️ 未开始 |
+
+真实性与完整真相源见伞仓 `EgoMotion/docs/STATUS.md`。
 
 ## 分支策略
 

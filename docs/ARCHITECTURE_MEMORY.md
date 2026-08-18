@@ -23,6 +23,16 @@ The current repository is EgoGlove. Claims about a completed EgoMotion or EgoBri
 - **EchoGlove Pro**: higher-capability roadmap with industrial IMU, eSkin/force interfaces, and reserved EGO Camera/depth interfaces. Multi-IMU finger hardware, full visual fusion, and force sensing are not to be represented as current implementation unless code evidence changes.
 - First-generation hardware does not move complete CV inference onto the MCU. Edge gateway, mobile, or cloud layers own heavier inference.
 
+## Demo1 Current Progress (2026-08-19)
+
+Demo1 = ESP32-S3 + 11×LSM6DSV16X + 3×HKVT-M3A → unified acquisition timeline → USB. Firmware target is `firmware/pro/` native ESP-IDF (not yet scaffolded).
+
+- **Phase 1A — HKVT-M3A minimal driver**: ✅ complete at software layer. `firmware/shared/hkvt_m3a.{h,c}` (transport-injected pure C, protocol decoupled from ESP-IDF I2C), 16 host unit tests PASS. Commit `f29f398` on `feature/human-motion-infrastructure` (not yet pushed). HKVT opcodes 0x03 (read force) / 0x1A (set address) / 0x13 (read temp) per datasheet V2.1 Canonical — **NOT HARDWARE VERIFIED**.
+- **Phase 1B — single LSM6DSV16X (native ESP-IDF)**: not started. Lite already runs a single LSM6DSV16X @120Hz under PlatformIO+Arduino (M2 verified); Demo1 needs 11 @200Hz under ESP-IDF.
+- **Phase 1C/1D — 11 IMU + 3 HKVT acquisition**: not started.
+- **Sensor bus topology** (ADR-002): baseline = 2×TCA9548A + I2C; SPI candidate C deferred. NOT HARDWARE VERIFIED (no PCB pinmap in repo).
+- **HKVT-M3A has no documented sensor-side timestamp / DRDY pin**; Demo1 uses MCU free-running timestamp + per-sensor seq. sync_error <1ms is an engineering goal, not a verified fact.
+
 ## Hand Token Decisions
 
 Hand Token v1 remains a 79-byte compatibility path. Hand Token v2 is a capability-flagged TLV frame with version gating, CRC compatibility, and a self-contained skeleton representation.
@@ -70,7 +80,7 @@ The validated dedicated CBM project is:
 - **Root**: `/home/EchoGloveHugeProjects/EgoGlove`
 - **Mode**: full index, status `ready`
 - **Observed size**: 2,706 nodes and 3,448 edges at validation time
-- **Priority sources represented**: `CLAUDE.md`, `docs/`, `docs/V7/`, `docs/BP/`, `firmware/shared/`, `relay/`, and tests
+- **Priority sources represented**: `CLAUDE.md`, `docs/`, `docs/V7/`, `docs/V8/`, `docs/superpowers/specs/adr/`, `firmware/shared/`, `relay/`, and tests
 - **Excluded during indexing**: `.claude`, `.superpowers`, `.remember`, `.git`, and `relay/__pycache__`
 
 The existing parent project `home-EchoGloveHugeProjects` remains intact for comparison and rollback. A dedicated index was created because the parent index returned no results for several scoped natural-language queries and exposed unrelated workspace projects in broad searches.
@@ -92,8 +102,8 @@ CBM quality was checked against the project truth hierarchy using the dedicated 
 
 - **Hand Token v2 design**: use `search_graph` or `get_architecture` for `serialize_v2`, `parse_v2`, `fk21`, firmware v2 codec symbols, and golden/FK tests; confirm protocol meaning against the v2 spec.
 - **Canonical-20 topology**: retrieve V7/spec Markdown with `search_code` under `docs/V7` and `docs/superpowers/specs`, then use the FK and OpenXR adapter symbols as implementation evidence.
-- **Adapter strategy**: use `search_graph` for `relay/openxr_adapter.py` boundaries and `search_code` for the interoperability matrix in `docs/BP`.
-- **EgoMotion roadmap**: use `search_code` under `CLAUDE.md`, `docs/V7`, and `docs/BP`; `search_graph` ranks extracted code symbols and is not sufficient by itself for prose roadmap questions.
+- **Adapter strategy**: use `search_graph` for `relay/openxr_adapter.py` boundaries and `search_code` for the interoperability matrix in `docs/V8` and ADRs under `docs/superpowers/specs/adr/`.
+- **EgoMotion roadmap**: use `search_code` under `CLAUDE.md`, `docs/V7`, `docs/V8`, and `docs/superpowers/specs/adr/`; `search_graph` ranks extracted code symbols and is not sufficient by itself for prose roadmap questions.
 
 ## Graphify Retirement Boundary
 

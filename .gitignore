@@ -13,6 +13,12 @@ node_modules/
 .next/
 dist/
 *.log
+# host 单测编译产物 (firmware/*/test/Makefile 生成)
+firmware/lite/test/test_lsm6dsv16x
+firmware/lite/test/test_madgwick
+firmware/lite/test/test_lite_sensor_manager
+firmware/shared/test/test_hand_token
+firmware/shared/test/test_hkvt_m3a
 
 # ---- IDE / Editor ----
 .vscode/*
@@ -54,6 +60,8 @@ secrets/
 .playwright-mcp/
 .superpowers/
 .graphify-out/
+graphify-out/
+relay/graphify-out/
 plan.md
 .plan.md
 

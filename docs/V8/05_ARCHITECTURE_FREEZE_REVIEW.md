@@ -1,9 +1,11 @@
 # V8 Architecture Freeze Review
 
-> 日期：2026-08  
-> 分支：`feature/human-motion-infrastructure`  
-> 基线 commit：`1a162f6 docs(v8): define human motion infrastructure layers`  
+> 日期：2026-08
+> 分支：`feature/human-motion-infrastructure`
+> 基线 commit：`1a162f6 docs(v8): define human motion infrastructure layers`
 > Review 类型：Read-only red-team architecture freeze review
+>
+> **状态注（2026-08-19 治理）**：本 review 写于 V8 提案冻结时，基线 `1a162f6` 为 V8 文档首次落地的 commit。此后实现仓 HEAD 已推进至 `f29f398`（Phase 1A HKVT-M3A driver 完成），但 V8 语义层仍为 **architecture proposal only**（见 `00_HUMAN_MOTION_INFRASTRUCTURE.md` 顶部），未被任何代码实现。本文件的 freeze 结论（不改 Hand Token v2 / canonical-20 / wire / firmware）依然成立。跨仓最新真相源见 `EgoMotion/docs/STATUS.md`。
 
 ## 1. Review 结论
 
