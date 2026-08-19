@@ -4,7 +4,7 @@
 > **Status**: 🔒 P0 设计已签核（2026-07-28）；进入 writing-plans → TDD 实现
 > **Owner**: PaxonHuang
 > **Decision**: 实现 STRATEGY.md **D11 + D12**（细化 D10）
-> **研究底稿**: `../../BP/research_5_data_formats_interop.md`（源实时核对，高/中/待核实分级）
+> **研究底稿**: 独立仓 `PaxonHuang/BP`（private）`archive/research_5_data_formats_interop.md`（源实时核对，高/中/待核实分级）
 > **绑定文档**: `../../V7/STRATEGY.md` §1 D11 · `../../V7/07_dual_rep_layer.md` §1b · `../../V7/ARCHITECTURE.md` §3/§8
 > **前置**: Hand Token v1（79B 定长帧）已实现于 `firmware/shared/hand_token.{h,c}` + `relay/hand_token.py`，v2 **永久兼容 v1**。
 
@@ -306,7 +306,7 @@ v2 internal quaternion state is always finite, normalized `w,x,y,z`; `QUAT_WLAST
 
 ## 相关
 
-- `../../BP/research_5_data_formats_interop.md` — 格式互操作研究底稿（§A canonical-20 / §B 映射矩阵 / §C TLV 帧 / §D MANO 优势）
+- `PaxonHuang/BP`（private）`archive/research_5_data_formats_interop.md` — 格式互操作研究底稿（§A canonical-20 / §B 映射矩阵 / §C TLV 帧 / §D MANO 优势）
 - `../../V7/STRATEGY.md` — D10 / D11 / D12 战略冻结
 - `../../V7/07_dual_rep_layer.md` §1b — v2 Skeleton Layer 摘要
 - `../../V7/ARCHITECTURE.md` §3/§8 — 数据流 + 真实性总表

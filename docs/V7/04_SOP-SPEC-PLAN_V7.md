@@ -3,7 +3,7 @@
 > **Version**: V7.0
 > **Date**: 2026-07-24
 > **Status**: 设计目标 + 实现路线
-> **参见**: `STRATEGY.md`, `ARCHITECTURE.md`, `../BP/EchoGlove_BP_V2.1.md`
+> **参见**: `STRATEGY.md`, `ARCHITECTURE.md`; 商业计划见独立仓 `PaxonHuang/BP`（private，唯一 BP 资产仓）
 
 本文件为 V7 主规格书，涵盖系统/硬件/固件/通信/relay/前端/数据/路线图。所有能力带 ✅/🟡/🔬/🌌 四级真实性标注。
 

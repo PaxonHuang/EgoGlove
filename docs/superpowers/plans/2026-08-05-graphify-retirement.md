@@ -23,7 +23,7 @@
 
 **Files:**
 - Modify: `docs/ARCHITECTURE_MEMORY.md`
-- Read only: `CLAUDE.md`, `docs/V7/STRATEGY.md`, `docs/V7/ARCHITECTURE.md`, `docs/BP/`, `relay/hand_token.py`, `relay/openxr_adapter.py`
+- Read only: `CLAUDE.md`, `docs/V7/STRATEGY.md`, `docs/V7/ARCHITECTURE.md`, `relay/hand_token.py`, `relay/openxr_adapter.py` (BP 仅存于独立仓 `PaxonHuang/BP`)
 
 **Interfaces:**
 - Consumes CBM project `home-EchoGloveHugeProjects-EgoGlove`.

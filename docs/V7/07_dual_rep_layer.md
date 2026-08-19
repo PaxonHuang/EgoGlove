@@ -3,7 +3,7 @@
 > **Version**: V7.0
 > **Date**: 2026-07-25
 > **Status**: v1 协议层已实现待测 (host 单测 / pytest 金标) · v2 Skeleton Layer 设计冻结待实现 (D11) · 生态对齐 (D12) · 语义映射 🟡
-> **参见**: `STRATEGY.md` D3/D10/D11/D12, `ARCHITECTURE.md` §2/§3, `../BP/research_5_data_formats_interop.md`
+> **参见**: `STRATEGY.md` D3/D10/D11/D12, `ARCHITECTURE.md` §2/§3; 研究底稿见独立仓 `PaxonHuang/BP`（private）`archive/research_5_data_formats_interop.md`
 
 双表示层是 EchoGlove 的核心壁垒 (D3): 同一硬件传感器流, 统一为 Hand Token, 再分叉为 MANO Layer (数字人侧) 与 Robot Action Layer (机器人侧), 互不污染。本文件定义 Hand Token 规范与两层映射。
 
@@ -67,7 +67,7 @@ Hand Token = 跨产品线 (Lite/Pro) 统一的归一化手部状态向量。
 
 ## 1b. Hand Token v2 — Skeleton Layer 互操作层 (D11 冻结, 代码待实现 🟡)
 
-> **状态**: 设计冻结 (D11, 2026-07-27 用户签核) · spec = `docs/superpowers/specs/2026-07-27-hand-token-v2-design.md` · 研究底稿 = `../BP/research_5_data_formats_interop.md` · **协议代码未写** (下一阶段 TDD 落地)。v1 (§1.2) 保持不变并永久兼容。
+> **状态**: 设计冻结 (D11, 2026-07-27 用户签核) · spec = `docs/superpowers/specs/2026-07-27-hand-token-v2-design.md` · 研究底稿 = `PaxonHuang/BP`（private）`archive/research_5_data_formats_interop.md` · **协议代码未写** (下一阶段 TDD 落地)。v1 (§1.2) 保持不变并永久兼容。
 
 D10/D11 把 Hand Token 升级为**双向手部运动互操作层**。v2 在 v1 (Sensor-level 紧凑帧) 之上引入 **Skeleton Layer**: 通用手部骨架表示, 可 ingest 第三方手套 (Hi5/mHand/Manus/Rokoko/OpenXR) 并 export 到生态 (MANO/BVH/FBX/OpenXR/ROS)。
 
@@ -228,7 +228,7 @@ class HandTokenSDK:
 | 能力 | 状态 | 佐证 |
 |------|------|------|
 | Hand Token 二进制协议 (serialize/parse/CRC-16/float16/device_id) | 🟡→✅ **实现完成, 待首轮测试确认** | `firmware/shared/hand_token.{h,c}` + `relay/hand_token.py`; host 单测 + pytest 金标双向校验待运行 |
-| Hand Token **v2** Skeleton Layer (20-rotation canonical, TLV 变长帧) | 🟡 **设计冻结 (D11), 代码待写** | spec `docs/superpowers/specs/2026-07-27-hand-token-v2-design.md`; 研究 `../BP/research_5`; 下一阶段 TDD 落地, v1 永久兼容 |
+| Hand Token **v2** Skeleton Layer (20-rotation canonical, TLV 变长帧) | 🟡 **设计冻结 (D11), 代码待写** | spec `docs/superpowers/specs/2026-07-27-hand-token-v2-design.md`; 研究 `PaxonHuang/BP`（private）`archive/research_5`; 下一阶段 TDD 落地, v1 永久兼容 |
 | 双表示层分叉 (`to_mano`/`to_robot_action` 结构视图) | 🟡 | `relay/hand_token.py` 结构视图, 非真实回归/重定向 |
 | MANO Layer (flex→θ/β 回归) | 🟡 | `models/mano/` 待实现 |
 | Robot Action Layer (joint retarget) | 🟡 | `models/robot/` 待实现 |
@@ -242,4 +242,4 @@ class HandTokenSDK:
 
 - `STRATEGY.md` D3 (数据标准), D1 (感知主线)
 - `ARCHITECTURE.md` §2/§3 (数据流图), §8 (真实性总表)
-- `../BP/EchoGlove_BP_V2.1.md` 第三章 (产品体系) / 第四章 (壁垒)
+- `PaxonHuang/BP`（private，唯一 BP 资产仓）早期 BP 第三章 (产品体系) / 第四章 (壁垒)

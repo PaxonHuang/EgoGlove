@@ -10,7 +10,7 @@ EgoGlove 是具身智能的人体手部智能层，主航道是遥操作与数�
 - V8 语义层（proposal，未实现）：`docs/V8/`
 - ADR：`docs/superpowers/specs/adr/`（ADR-001 仓库拓扑、ADR-002 传感器总线）
 - 跨仓真相源：伞仓 `EgoMotion/docs/STATUS.md`、`EgoMotion/docs/DOC_MATRIX.md`
-- 产业 BP：HISTORICAL，见 `.claude/worktrees/investor-customer-bp/docs/business/`（投资方/甲方 BP V1）与 `docs/BP/`（早期 BP V2/V2.1，主仓已不跟踪，仅 worktree 存活）
+- 产业 / 客户 BP：统一在独立 BP 仓 [`PaxonHuang/BP`](https://github.com/PaxonHuang/BP)（**private**，唯一 BP 资产仓）；`docs/business/` 为当前投资方/甲方 BP V1，`archive/` 为历史 V2/V2.1。本实现仓不保留任何 BP 文件。
 
 不要把战略表格、架构图或完整路线复制到本文件；先读上述文档再作重大判断。
 

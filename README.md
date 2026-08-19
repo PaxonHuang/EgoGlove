@@ -36,7 +36,7 @@ docs/{V7,V8}/   templates/   scripts/
 - **架构**: `docs/V7/ARCHITECTURE.md` (双表示层 + 系统架构 + 真实性总表)
 - **V8 语义层**: `docs/V8/` (Human Motion Infrastructure proposal，**未实现**)
 - **ADR**: `docs/superpowers/specs/adr/` (ADR-001 仓库拓扑 / ADR-002 传感器总线)
-- **BP**: 见 `.claude/worktrees/investor-customer-bp/docs/business/` 与 `docs/BP/`（HISTORICAL，主仓已不跟踪）
+- **BP**: 独立 BP 仓 [PaxonHuang/BP](https://github.com/PaxonHuang/BP)（**private**，唯一 BP 资产仓）
 
 ## Demo1 当前进度（2026-08-19）
 

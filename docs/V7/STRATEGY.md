@@ -186,7 +186,7 @@ Sensor Stream ──→ Hand Token ──┤
 3. **通信栈硬伤**：on-board C6 = ESP-Hosted 不能 ESP-NOW 透传。生产期 C6 走 ESP-Hosted Wi-Fi/UDP；开发期走 S3→P4 直连 UART（仅设计）。
 4. **"亚秒级连续手语识别"未证明** → 需建 benchmark（延迟/字词错误率/连续准确率），BP 降级为目标。
 5. **UWB 定位**：对 egocentric VLA 可能冗余（视觉可给位姿），且增 BOM 成本 → Pro 可选、Lite 不做。
-6. **竞品分析需定量矩阵**：送审中关村/WRC/京东需 6 维度 × N 竞品矩阵，见 BP 第 6 章 + `docs/BP/research_*.md`。
+6. **竞品分析需定量矩阵**：送审中关村/WRC/京东需 6 维度 × N 竞品矩阵，见独立仓 `PaxonHuang/BP`（private）早期 BP 第 6 章 + `archive/research_*.md`。
 
 ---
 
@@ -194,7 +194,7 @@ Sensor Stream ──→ Hand Token ──┤
 
 D1–D12 全部冻结，进入 BP 撰写与产品落地阶段。任何战略变更需：
 1. 在本文件追加 Dn 条目并标注日期
-2. 同步更新 `docs/BP/` 与 `docs/V7/ARCHITECTURE.md`
+2. 同步更新独立仓 `PaxonHuang/BP`（private）与 `docs/V7/ARCHITECTURE.md`
 3. commit 信息注明 "strategic change: Dn"
 
 ---
@@ -203,5 +203,4 @@ D1–D12 全部冻结，进入 BP 撰写与产品落地阶段。任何战略变�
 
 - `ARCHITECTURE.md` — 双表示层系统架构与数据流
 - `06_decision_summary.md` — V6→V7 决策记录与真实性分级
-- `../BP/EchoGlove_BP_V2.1.md` — 产业级商业计划书（按本战略编写）
-- `../BP/research_*.md` — 4 份竞品/学术研究（支撑第 6 章）
+- `PaxonHuang/BP`（private，唯一 BP 资产仓）— 早期产业级商业计划书（`archive/EchoGlove_BP_V2.1.md`，按本战略编写）与竞品/学术研究（`archive/research_*.md`，支撑第 6 章）

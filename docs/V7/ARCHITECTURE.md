@@ -89,7 +89,7 @@
 
 **Hand Token 规范**（v1 已实现待测 ✅→🟡；v2 Skeleton Layer 设计冻结 D11 🟡）：
 
-> **v2 = Skeleton Layer（D10/D11，位于双表示层上游）**：管线细化为 `Sensor → Skeleton Layer(20-rotation canonical Hand Token v2, 派生 21 MediaPipe) → {MANO Layer, Robot Action Layer} + BVH/FBX/OpenXR/ROS 导出器`，且可被第三方手套(Hi5/mHand/Manus/Rokoko/OpenXR)在 Skeleton Layer 注入(ingest)。canonical=20 旋转关节(⊃MANO-16, =Noitom Axis-20, =OpenXR去派生)；v1(79B) 永久兼容, v2=capability-flagged TLV 变长帧。详见 `07_dual_rep_layer.md` §1b + `../BP/research_5_data_formats_interop.md`。
+> **v2 = Skeleton Layer（D10/D11，位于双表示层上游）**：管线细化为 `Sensor → Skeleton Layer(20-rotation canonical Hand Token v2, 派生 21 MediaPipe) → {MANO Layer, Robot Action Layer} + BVH/FBX/OpenXR/ROS 导出器`，且可被第三方手套(Hi5/mHand/Manus/Rokoko/OpenXR)在 Skeleton Layer 注入(ingest)。canonical=20 旋转关节(⊃MANO-16, =Noitom Axis-20, =OpenXR去派生)；v1(79B) 永久兼容, v2=capability-flagged TLV 变长帧。详见 `07_dual_rep_layer.md` §1b + `PaxonHuang/BP`（private）`archive/research_5_data_formats_interop.md`。
 
 > **D12 生态对齐 — 开放手部运动基础设施（非竞品）**：EgoGlove 不是 Hi5/Manus/mHand 竞品；厂商手套 = **外部数据源/适配器**。通用四段管线：`Sensor Source(flex/IMU/vision/外部手套) → Hand Token v2(通用中间表示) → Canonical Skeleton Layer(20 旋转关节, FK 派生 21) → MANO / OpenXR / FreeMoCap / ROS2 / Robot(经 DexRetargeting/AnyTeleop)`。Hand Token v2 **不围绕任何厂商设计**。优先级 P0 冻结骨架+v2 · P1 adapters/exporters · P2 集成 Hi5/Manus/mHand · P3 Pro 硬件扩展。详见 `STRATEGY.md` D12。
 
@@ -202,5 +202,4 @@ data/               → Open Core (open/) + Commercial (commercial/, gitignore)
 - `02_BOM_table.md` — Lite/Pro BOM
 - `04_SOP-SPEC-PLAN_V7.md` — 主规格书
 - `07_dual_rep_layer.md` — 双表示层 + Hand Token v1/v2 (Skeleton Layer)
-- `../BP/research_5_data_formats_interop.md` — 手部数据格式互操作研究底稿
-- `../BP/EchoGlove_BP_V2.1.md` — 产业级 BP
+- `PaxonHuang/BP`（private）：`archive/research_5_data_formats_interop.md` — 手部数据格式互操作研究底稿；`archive/EchoGlove_BP_V2.1.md` — 早期产业级 BP
