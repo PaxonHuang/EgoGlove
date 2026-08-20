@@ -32,10 +32,10 @@ docs/{V7,BP}/   templates/   scripts/
 
 ## 文档
 
-- **战略**: `docs/V7/STRATEGY.md` (D1–D9 冻结决策)
-- **架构**: `docs/V7/ARCHITECTURE.md` (双表示层 + 系统架构)
-- **BP**: `docs/BP/EchoGlove_BP_V2.1.md` (产业级商业计划书)
-- **V7 设计文档**: `docs/V7/` (8 文件 + STRATEGY + ARCHITECTURE)
+- **战略**：`docs/V7/STRATEGY.md`（D1–D9 冻结决策）
+- **架构**：`docs/V7/ARCHITECTURE.md`（双表示层 + 系统架构）
+- **BP**：`docs/BP/EchoGlove_BP_V2.1.md`（产业级商业计划书）
+- **V7 设计文档**：`docs/V7/`（8 文件 + STRATEGY + ARCHITECTURE）
 
 ## 分支策略
 
