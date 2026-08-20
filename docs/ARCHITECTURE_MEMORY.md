@@ -19,8 +19,8 @@ The current repository is EgoGlove. Claims about a completed EgoMotion or EgoBri
 
 ## EgoGlove Roadmap
 
-- **EchoGlove Lite**: `flex(5)` plus a single-wrist IMU, with low-cost sensing and compact Hand Token output. The IMU driver and higher-level estimation remain status-qualified in the V7 architecture.
-- **EchoGlove Pro**: higher-capability roadmap with industrial IMU, eSkin/force interfaces, and reserved EGO Camera/depth interfaces. Multi-IMU finger hardware, full visual fusion, and force sensing are not to be represented as current implementation unless code evidence changes.
+- **EgoGlove Lite**: `flex(5)` plus a single-wrist IMU, with low-cost sensing and compact Hand Token output. The IMU driver and higher-level estimation remain status-qualified in the V7 architecture.
+- **EgoGlove Pro**: higher-capability roadmap with industrial IMU, eSkin/force interfaces, and reserved EGO Camera/depth interfaces. Multi-IMU finger hardware, full visual fusion, and force sensing are not to be represented as current implementation unless code evidence changes.
 - First-generation hardware does not move complete CV inference onto the MCU. Edge gateway, mobile, or cloud layers own heavier inference.
 
 ## Demo1 Current Progress (2026-08-19)

@@ -1,7 +1,7 @@
 # EgoGlove — Claude Code 项目指南
 
 ## 项目定位
-EgoGlove 是具身智能的人体手部智能层，主航道是遥操作与数据采集，次要场景是手语、XR 与可视化。产品为 EchoGlove Lite / Pro 双线，核心是 Sensor → Hand Token → 双表示层：MANO Layer 与 Robot Action Layer。
+EgoGlove 是具身智能的人体手部智能层，主航道是遥操作与数据采集，次要场景是手语、XR 与可视化。产品为 EgoGlove Lite / Pro 双线，核心是 Sensor → Hand Token → 双表示层：MANO Layer 与 Robot Action Layer。
 
 ## 唯一真相源
 - 战略冻结与 D1–D12：`docs/V7/STRATEGY.md`

@@ -1,0 +1,5 @@
+# Demo1 Phase 1B — native ESP-IDF target: ESP32-S3
+CONFIG_IDF_TARGET="esp32s3"
+
+# I2C driver: new i2c_master API
+CONFIG_ESP32S3_I2C_ENABLE_INTERNAL_PULLUP=y

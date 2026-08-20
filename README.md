@@ -8,8 +8,8 @@ EgoGlove 是面向具身智能的**人体手部智能层**：以低成本多模�
 
 | 产品线 | 定位 | 硬件 | 目标 |
 |---|---|---|---|
-| **EchoGlove Lite** | 消费/教育/XR/手语入口 | ESP32-S3 + Flex + IMU + BLE/WiFi, <¥500 BOM | 低成本多模态手部状态采集 |
-| **EchoGlove Pro** | 具身智能数据入口 | ESP32-P4 + 工业级 IMU + 柔性传感 + 力接口 + EGO Camera 接口 + Depth 接口 | 遥操作/数据采集/VLA 训练数据 |
+| **EgoGlove Lite** | 消费/教育/XR/手语入口 | ESP32-S3 + Flex + IMU + BLE/WiFi, <¥500 BOM | 低成本多模态手部状态采集 |
+| **EgoGlove Pro** | 具身智能数据入口 | ESP32-P4 + 工业级 IMU + 柔性传感 + 力接口 + EGO Camera 接口 + Depth 接口 | 遥操作/数据采集/VLA 训练数据 |
 
 ## 核心壁垒：双表示层架构
 
